@@ -9,7 +9,7 @@ services:
       - analisi-dati
 
   analisi-dati:
-    build: ./analisi-dati
+    build: ./Analisi Dati
     container_name: analisi-dati
     ports:
       - "5001:5001"
