@@ -1,0 +1,15 @@
+#version: "3.9"
+services:
+  raccolta-dati:
+    build: ./Raccolta Dati
+    container_name: raccolta-dati
+    environment:
+      - ANALISI_URL=http://analisi-dati:5001/analizza
+    depends_on:
+      - analisi-dati
+
+  analisi-dati:
+    build: ./analisi-dati
+    container_name: analisi-dati
+    ports:
+      - "5001:5001"

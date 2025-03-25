@@ -1,20 +1,38 @@
 import time
 import requests
+import os
+from datetime import timedelta
 
-API_URL = "https://allertameteo.regione.emilia-romagna.it/datiTempoReale-prevPiog-portlet/get-bollettino-monitoraggio"  
+API_REGIONE = "https://allertameteo.regione.emilia-romagna.it/datiTempoReale-prevPiog-portlet/get-bollettino-monitoraggio"  
+API_ANALISI = os.getenv("ANALISI_URL", "http://analisi-dati:5001/analizza")  # nome del servizio docker
 
 def fetch_data():
     try:
-        response = requests.get(API_URL)
+        response = requests.get(API_REGIONE)
         response.raise_for_status()
-        print("Dati ricevuti:", response.json())
+        return response.json()
+        #print("Dati ricevuti:", response.json())
     except Exception as e:
         print("Errore:", e)
-
+        return None
+    
+def invia_a_analisi(dati):
+    try:
+        response = requests.post(API_ANALISI, json=dati)
+        print("Risposta da analisi-dati:", response.json())
+    except Exception as e:
+        print("Errore nell'invio a analisi-dati:", e)
+    
 def main():
     while True:
-        fetch_data()
-        time.sleep(3600)  # ogni ora
+        dati = fetch_data()
+        if dati:
+            invia_a_analisi(dati)
+        # Crea un oggetto timedelta di 12 ore
+        attesa = timedelta(hours=12)
+
+        # Converte in secondi e passalo a sleep
+        time.sleep(attesa.total_seconds())
 
 if __name__ == "__main__":
     main()
