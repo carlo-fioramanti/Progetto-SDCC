@@ -13,3 +13,34 @@ services:
     container_name: analisi-dati
     ports:
       - "5001:5001"
+
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: dynamodb
+    ports:
+      - "8000:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb"]
+
+
+  gestioneutente:
+    build: ./gestioneutente
+    container_name: gestioneutente
+    depends_on:
+      - dynamodb
+    environment:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_SESSION_TOKEN: "${AWS_SESSION_TOKEN}"
+      AWS_REGION: "us-east-1"
+      DYNAMODB_TABLE: "Users"
+    ports:
+     - "5001:5001" 
+
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    depends_on:
+      - gestioneutente
+    stdin_open: true
+    tty: true
