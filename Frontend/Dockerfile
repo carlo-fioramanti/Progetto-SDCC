@@ -4,3 +4,4 @@ COPY requirementsFrontend.txt .
 RUN pip install -r requirementsFrontend.txt
 COPY . .
 CMD ["python", "appFrontend.py"]
+
