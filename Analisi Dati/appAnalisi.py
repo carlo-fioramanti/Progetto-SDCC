@@ -1,60 +1,66 @@
-# analisi-dati/appAnalisi.py
 from flask import Flask, request, jsonify
+from confluent_kafka import Producer
+import json
+
+producer_config = {
+    'bootstrap.servers': 'kafka:9092'
+}
+
+producer = Producer(producer_config)
 
 app = Flask(__name__)
 
-# il metodo notifica viene chiamato per ogni fiume il cui livello dell'acqua sta in fascia arancione o rossa
 def notifica(fiume, sottobacino, fascia):
-    #qui va fatta la notifica agli utenti con il collegamento al subscriber 
-    print(f"Allerta {fascia} per il sottobacino {sottobacino} del fiume {fiume}", flush=True)
-
+    """Invia una notifica Kafka se il livello dell'acqua è in fascia arancione o rossa."""
+    messaggio = {
+        "fiume": fiume,
+        "sottobacino": sottobacino,
+        "fascia": fascia
+    }
+    producer.produce("allerta_fiumi", json.dumps(messaggio).encode('utf-8'))
+    producer.flush()
 
 @app.route("/analizza", methods=["POST"])
 def analizza():
     dati = request.json
 
-    fascia_verde = 3.0
-    fascia_gialla = 6.0
-    fascia_arancione = 9.0
-    fascia_rossa = 12.0
-    # Lista per contenere i dati_fiumi
-    dati_fiumi = {
-        "nome_fiume": [],
-        "sottobacino": [],
-        "fascia": []
+    fasce = {
+        "verde": 3.0,
+        "gialla": 6.0,
+        "arancione": 9.0,
+        "rossa": 12.0
     }
-    
-    # Itera attraverso ogni bacino
-    for data_per_data in dati.values():  # Itera attraverso le date
+
+    dati_fiumi = []
+
+    for data_per_data in dati.values():
         for bacino in data_per_data["bacino"]:
             nome_bacino = bacino["nome_bacino"]
             
-            # Itera attraverso i sottobacini
             for sottobacino in bacino["sottobacino"]:
                 nome_sottobacino = sottobacino["nomeSottobacino"]
-                
-                # Estrai i valori da colmo_previsto e osservazione
-                #valore_colmo_previsto = sottobacino["colmo_previsto"]["valore"]
                 valore_osservazione = float(sottobacino["osservazione"]["valore"])
-                fascia = ""
-                if valore_osservazione is None:
-                    fascia = "valore non valido"
-                elif valore_osservazione < fascia_verde:
+
+                if valore_osservazione < fasce["verde"]:
                     fascia = "verde"
-                elif valore_osservazione < fascia_gialla:
+                elif valore_osservazione < fasce["gialla"]:
                     fascia = "gialla"
-                elif valore_osservazione < fascia_arancione:
+                elif valore_osservazione < fasce["arancione"]:
                     fascia = "arancione"
                     notifica(nome_bacino, nome_sottobacino, fascia)
-                elif valore_osservazione < fascia_rossa:
+                elif valore_osservazione < fasce["rossa"]:
                     fascia = "rossa"
                     notifica(nome_bacino, nome_sottobacino, fascia)
+                else:
+                    fascia = "oltre il rosso"
 
-                # Aggiungi alla lista dei dati_fiumi
-                dati_fiumi["nome_fiume"].append(nome_bacino)
-                dati_fiumi["sottobacino"].append(nome_sottobacino)
-                dati_fiumi["fascia"].append(fascia)
-    return dati_fiumi
+                dati_fiumi.append({
+                    "fiume": nome_bacino,
+                    "sottobacino": nome_sottobacino,
+                    "fascia": fascia
+                })
+
+    return jsonify(dati_fiumi)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
