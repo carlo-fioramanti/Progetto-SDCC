@@ -1,15 +1,107 @@
 #version: "3.9"
 services:
-  raccolta-dati:
-    build: ./Raccolta Dati
+  
+  # Zookeeper per Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # subscriber fittizio per analisi_dati (Subscriber)
+  subscriber:
+    build:
+      context: ./Notifica
+      dockerfile: Dockerfile
+    command: python3 subscriber.py
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+
+
+  # Microservizio Registrazione (Publisher)
+  registrazione:
+    build:
+      context: ./Registrazione
+      dockerfile: Dockerfile
+    command: python3 prova.py
+
+
+  # Microservizio Segnalazione Utenti (Publisher)
+  segnalazione_utenti:
+    build:
+      context: ./Segnalazione Utenti
+      dockerfile: Dockerfile
+    command: python3 prova.py
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+
+
+  # Microservizio Analisi Dati
+  analisi_dati:
+    build: 
+      context: ./Analisi Dati
+      dockerfile: Dockerfile
+    container_name: analisi-dati
+    command: python3 appAnalisi.py
+    ports:
+      - "5001:5001"
+    depends_on:
+      - kafka
+    #environment:
+     # KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+  #    analisi-dati:
+  #  build: ./Analisi Dati
+  #  container_name: analisi-dati
+  #  ports:
+  #    - "5001:5001"
+
+  # Microservizio Frontend
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: http://localhost:3000
+
+  # Microservizio Raccolta Dati
+  raccolta_dati:
+    build: 
+      context: ./Raccolta Dati
+      dockerfile: Dockerfile
     container_name: raccolta-dati
+    command: python3 appRaccolta.py
     environment:
       - ANALISI_URL=http://analisi-dati:5001/analizza
     depends_on:
-      - analisi-dati
-
-  analisi-dati:
-    build: ./Analisi Dati
-    container_name: analisi-dati
-    ports:
-      - "5001:5001"
+      - analisi_dati
+  #raccolta-dati:
+   # build: ./Raccolta Dati
+   # container_name: raccolta-dati
+   # environment:
+    #  - ANALISI_URL=http://analisi-dati:5001/analizza
+    #depends_on:
+    #  - analisi-dati
