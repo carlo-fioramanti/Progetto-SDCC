@@ -34,7 +34,7 @@ services:
       AWS_REGION: "us-east-1"
       DYNAMODB_TABLE: "Users"
     ports:
-     - "5001:5001" 
+     - "5002:5001" 
 
 
   frontend:
