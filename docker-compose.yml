@@ -36,12 +36,6 @@ services:
 
 
 
-  # Microservizio Registrazione (Publisher)
-  registrazione:
-    build:
-      context: ./Registrazione
-      dockerfile: Dockerfile
-    command: python3 prova.py
 
 
   # Microservizio Segnalazione Utenti (Publisher)
@@ -99,18 +93,35 @@ services:
     depends_on:
     - analisi_dati
 
+<<<<<<< Updated upstream
   # analisi-dati:
   #   build: ./Analisi Dati
   #   container_name: analisi-dati
   #   ports:
   #     - "5001:5001"
 
+=======
+>>>>>>> Stashed changes
   dynamodb:
     image: amazon/dynamodb-local
     container_name: dynamodb
     ports:
       - "8000:8000"
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb"]
+
+  gestionepreferiti:
+    build: ./GestionePreferiti  
+    container_name: GestionePreferiti
+    depends_on:
+      - dynamodb  
+      - gestioneutente
+    environment:  
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_SESSION_TOKEN: "${AWS_SESSION_TOKEN}"
+      AWS_REGION: "us-east-1"
+    ports:
+      - "5004:5004"
 
 
   gestioneutente:
@@ -132,6 +143,9 @@ services:
     container_name: frontend
     depends_on:
       - gestioneutente
+      - gestionepreferiti
     stdin_open: true
     tty: true
+    ports:
+      - "3000:3000" 
 
