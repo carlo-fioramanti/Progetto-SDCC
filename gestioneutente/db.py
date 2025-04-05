@@ -34,9 +34,9 @@ def create_user(username, password):
     item = {
         "user_id": user_id,
         "username": username,
-        "password": password,  # ⚠️ Da hashare!
+        "password": password,  
     }
-    print(f"Salvataggio in tabella {dynamodb_table}: {item}")
+    print(f"Salvataggio in tabella {table}: {item}")
     table.put_item(Item=item)
     return user_id
 

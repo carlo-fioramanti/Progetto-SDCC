@@ -93,15 +93,7 @@ services:
     depends_on:
     - analisi_dati
 
-<<<<<<< Updated upstream
-  # analisi-dati:
-  #   build: ./Analisi Dati
-  #   container_name: analisi-dati
-  #   ports:
-  #     - "5001:5001"
 
-=======
->>>>>>> Stashed changes
   dynamodb:
     image: amazon/dynamodb-local
     container_name: dynamodb

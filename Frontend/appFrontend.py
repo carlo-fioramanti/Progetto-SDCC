@@ -1,20 +1,21 @@
 import requests
 import urllib.parse
 
-API_URL_gestioneuntente = "http://gestioneutente:5001"
+
+API_URL_gestioneutente = "http://gestioneutente:5001"
 API_URL_gestionepreferiti = "http://GestionePreferiti:5004"
 
 def register():
 
     username = input("Inserisci username: ")
     password = input("Inserisci password: ")
-    response = requests.post(f"{API_URL_gestioneuntente}/register", json={"username": username, "password": password})
+    response = requests.post(f"{API_URL_gestioneutente}/register", json={"username": username, "password": password})
 
 
 def login():
     username = input("Inserisci username: ")
     password = input("Inserisci password: ")
-    response = requests.post(f"{API_URL_gestioneuntente}/login", json={"username": username, "password": password})
+    response = requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
 
     # Verifica se il login è andato a buon fine
     if response.status_code == 200:
