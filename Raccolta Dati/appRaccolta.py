@@ -1,11 +1,15 @@
 import time
 import requests
 import os
+from flask import Flask
 from datetime import timedelta
 
 API_REGIONE = "https://allertameteo.regione.emilia-romagna.it/datiTempoReale-prevPiog-portlet/get-bollettino-monitoraggio"  
 API_ANALISI = os.getenv("ANALISI_URL", "http://analisi-dati:5001/analizza")  # nome del servizio docker
 
+app = Flask(__name__)
+
+@app.route("/fetch_data", methods=["GET"])
 def fetch_data():
     try:
         response = requests.get(API_REGIONE)
@@ -35,4 +39,4 @@ def main():
         time.sleep(attesa.total_seconds())
 
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=5005)
