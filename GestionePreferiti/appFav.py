@@ -1,6 +1,12 @@
 from db_fav import add_to_favorites
+from db_fav import show_favorites
 from flask import Flask, request, jsonify
+import requests
+import os
 import json
+
+API_ANALISI = os.getenv("ANALISI_URL", "http://analisi-dati:5001/analizza") 
+API_RACCOLTA = os.getenv("RACCOLTA_URL", "http://raccolta-dati:5005/fetch_data")
 
 app = Flask(__name__)
 
@@ -51,6 +57,28 @@ def gestione_preferiti():
         return jsonify({"message": f"{sottobacino} aggiunto ai preferiti di {fiume}!"}), 200
     except Exception as e:
         return jsonify({"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}), 500
+
+@app.route("/controllo_preferiti", methods=["POST"])
+def controllo_preferiti():
+    data =  request.json
+    user_id = data.get("user_id")
+
+    # Step 1: Ottieni i dati grezzi dai sensori dalla raccolta
+    raccolta_response = requests.get(API_RACCOLTA)
+    if raccolta_response.status_code != 200:
+        return jsonify({"error": "Errore nel recupero dei dati dalla raccolta"}), 500
+    
+    dati = raccolta_response.json()
+
+    analisi_response = requests.post(API_ANALISI, json=dati)
+    if analisi_response.status_code != 200:
+        return jsonify({"error": "Errore nell'analisi dei dati"}), 500
+
+    dati_fiumi = analisi_response.json()
+    # Una volta ottenuto l'id dello user, faccio la query al db per prendere la lista dei preferiti
+    favorites = show_favorites(user_id, dati_fiumi)
+    # return favorites
+    return jsonify(favorites)
 
 
 if __name__ == "__main__":

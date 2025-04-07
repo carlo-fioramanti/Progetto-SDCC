@@ -15,7 +15,7 @@ def register():
 def login():
     username = input("Inserisci username: ")
     password = input("Inserisci password: ")
-    response = requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
+    response = requests.post(f"{API_URL_gestioneuntente}/login", json={"username": username, "password": password})
 
     # Verifica se il login è andato a buon fine
     if response.status_code == 200:
@@ -63,6 +63,20 @@ def gestione_preferiti(user_id):
     else:
         print(f"Errore: {response.status_code} - {response.text}")
 
+def controllo_preferiti(user_id):
+    response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json = {"user_id": user_id})
+    if response.status_code != 200:
+        print(response)
+        print("Errore nel recupero dei preferiti.")
+        return
+    preferiti = response.json()
+    print("\n Fiumi preferiti:")
+    for idx, pref in enumerate(preferiti):
+        fiume = pref.get("fiume", "")
+        sottobacino = pref.get("sottobacino", "")
+        fascia_allerta = pref.get("allerta", "")
+        print(f"{idx}. Fiume: {fiume}, Sottobacino: {sottobacino}, Allerta: {fascia_allerta}")
+
 
 def main():
     while True:
@@ -80,7 +94,19 @@ def main():
                     choice = input("Scegli un'opzione: ")
 
                     if choice == "0":
-                        gestione_preferiti(user_id)
+                        while True:
+                            print("\n--- Schermata Gestione Preferiti ---")
+                            print("0. Aggiungi Preferiti")
+                            print("1. Controlla Preferiti")
+                            print("2. Torna Alla Schermata Principale")
+                            choice = input("Scegli un'opzione: ")
+                            if choice == "0":
+                                gestione_preferiti(user_id)
+                            elif choice == "1":
+                                controllo_preferiti(user_id)
+                            elif choice == "1":
+                                print("Ritorno alla schermata principale")
+                                break
                     elif choice == "1":
                         print("Arrivederci!")
                         break

@@ -90,9 +90,10 @@ services:
     command: python3 appRaccolta.py
     environment:
       - ANALISI_URL=http://analisi-dati:5001/analizza
+    ports:
+      - "5005:5005"
     depends_on:
     - analisi_dati
-
 
   dynamodb:
     image: amazon/dynamodb-local

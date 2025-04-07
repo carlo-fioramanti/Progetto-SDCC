@@ -39,6 +39,8 @@ def add_to_favorites(user_id, fiume, sottobacino):
             # Se l'utente non ha ancora preferiti, crea una nuova lista
             user_favorites = {'id_user': user_id, 'preferiti': []}
         
+        print(fiume, flush=True)
+        print(sottobacino, flush=True)
         # Aggiungi il nuovo preferito
         user_favorites['preferiti'].append({'fiume': fiume, 'sottobacino': sottobacino})
         
@@ -49,3 +51,27 @@ def add_to_favorites(user_id, fiume, sottobacino):
     except Exception as e:
         print(f"Errore durante l'aggiunta ai preferiti: {e}")
         return {"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}
+    
+def show_favorites(user_id, dati_fiumi):
+    response = table.get_item(Key={'id_user': user_id})
+    preferiti = response['Item']['preferiti']
+
+    favorites = []
+    for p in preferiti:
+        fiume = p['fiume']
+        sottobacino = p['sottobacino']
+
+        fascia_allerta = "non disponibile"
+
+        for entry in dati_fiumi:
+            if entry["fiume"] == fiume and entry["sottobacino"] == sottobacino:
+                fascia_allerta = entry["fascia"]
+                break
+
+        favorites.append({
+            "fiume": fiume,
+            "sottobacino": sottobacino,
+            "allerta": fascia_allerta
+        })
+
+    return favorites
