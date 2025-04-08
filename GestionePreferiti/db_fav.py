@@ -75,3 +75,28 @@ def show_favorites(user_id, dati_fiumi):
         })
 
     return favorites
+
+def remove_from_favorites(user_id, fiume, sottobacino):
+    response = table.get_item(Key={'id_user': user_id})
+    if 'Item' not in response:
+        raise Exception("Utente non trovato.")
+
+    user_data = response['Item']
+    preferiti = user_data.get('preferiti', [])
+
+    # Rimuovi con confronto "robusto"
+    nuovi_preferiti = []
+    rimosso = False
+    for p in preferiti:
+        if p['fiume'].strip().lower() == fiume.strip().lower() and p['sottobacino'].strip().lower() == sottobacino.strip().lower():
+            rimosso = True
+            continue  # salta questo elemento
+        nuovi_preferiti.append(p)
+
+    if not rimosso:
+        raise Exception("Preferito non trovato.")
+
+    # Aggiorna la lista nel DB
+    user_data['preferiti'] = nuovi_preferiti
+    table.put_item(Item=user_data)
+

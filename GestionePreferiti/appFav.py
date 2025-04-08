@@ -1,5 +1,5 @@
-from db_fav import add_to_favorites
-from db_fav import show_favorites
+from db_fav import add_to_favorites, remove_from_favorites, show_favorites
+# from db_fav import show_favorites
 from flask import Flask, request, jsonify
 import requests
 import os
@@ -79,6 +79,24 @@ def controllo_preferiti():
     favorites = show_favorites(user_id, dati_fiumi)
     # return favorites
     return jsonify(favorites)
+
+@app.route("/rimozione_preferiti", methods=["DELETE"])
+def rimuovi_preferito():
+    data = request.json
+    user_id = data.get("user_id")
+    fiume = data.get("fiume")
+    sottobacino = data.get("sottobacino")
+
+    if not user_id or not fiume or not sottobacino:
+        return jsonify({"error": "Dati incompleti"}), 400
+
+    try:
+        remove_from_favorites(user_id, fiume, sottobacino)
+        return jsonify({"message": f"{sottobacino} rimosso dai preferiti di {fiume}!"}), 200
+    except Exception as e:
+        return jsonify({"error": f"Errore durante la rimozione: {str(e)}"}), 500
+
+
 
 
 if __name__ == "__main__":

@@ -8,11 +8,10 @@ def register():
     password = input("Inserisci password: ")
     response = requests.post(f"{API_URL}/register", json={"username": username, "password": password})
 
-
 def login():
     username = input("Inserisci username: ")
     password = input("Inserisci password: ")
-    response = requests.post(f"{API_URL_gestioneuntente}/login", json={"username": username, "password": password})
+    response = requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
 
     # Verifica se il login è andato a buon fine
     if response.status_code == 200:
@@ -61,6 +60,7 @@ def gestione_preferiti(user_id):
         print(f"Errore: {response.status_code} - {response.text}")
 
 def controllo_preferiti(user_id):
+    # Stampo prima la lista dei preferiti dell'utente
     response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json = {"user_id": user_id})
     if response.status_code != 200:
         print(response)
@@ -73,6 +73,52 @@ def controllo_preferiti(user_id):
         sottobacino = pref.get("sottobacino", "")
         fascia_allerta = pref.get("allerta", "")
         print(f"{idx}. Fiume: {fiume}, Sottobacino: {sottobacino}, Allerta: {fascia_allerta}")
+
+def rimozione_preferiti(user_id):
+    # Stampo prima la lista dei preferiti dell'utente
+    print("Elenco dei preferiti:")
+    response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json = {"user_id": user_id})
+    if response.status_code != 200:
+        print(response)
+        print("Errore nel recupero dei preferiti.")
+        return
+    preferiti = response.json()
+    print("\n Fiumi preferiti:")
+    for idx, pref in enumerate(preferiti):
+        fiume = pref.get("fiume", "")
+        sottobacino = pref.get("sottobacino", "")
+        print(f"{idx}. Fiume: {fiume}, Sottobacino: {sottobacino}")
+
+    # Faccio scegliere all'utente il preferito da eliminare 
+    
+    while True:
+        try:
+            num_fiume = int(input("Seleziona il numero del fiume da rimuovere: "))
+            if num_fiume < 0 or num_fiume >= len(preferiti):
+                print("Numero selezionato non valido")
+                return
+        except ValueError:
+            print("Input non valido. Inserisci un numero.")
+            return
+        
+        # Effettuo la chiamata alla DELETE (o POST con "azione": "rimuovi")
+        fiume_da_rimuovere = preferiti[num_fiume]["fiume"]
+        sottobacino_da_rimuovere = preferiti[num_fiume]["sottobacino"]
+
+        response = requests.delete(
+            f"{API_URL_gestionepreferiti}/rimozione_preferiti",
+            json={"user_id": user_id, "fiume": fiume_da_rimuovere, "sottobacino": sottobacino_da_rimuovere}
+        )
+
+        if response.status_code == 200:
+            print("Il preferito è stato rimosso")
+        else:
+            print(f"Errore nella rimozione: {response.text}")
+        break
+
+
+
+
 
 
 def main():
@@ -95,24 +141,30 @@ def main():
                             print("\n--- Schermata Gestione Preferiti ---")
                             print("0. Aggiungi Preferiti")
                             print("1. Controlla Preferiti")
-                            print("2. Torna Alla Schermata Principale")
-                            choice = input("Scegli un'opzione: ")
-                            if choice == "0":
+                            print("2. Rimuovi Preferiti")
+                            print("3. Torna Alla Schermata Principale")
+                            scelta = input("Scegli un'opzione: ")
+                            if scelta == "0":
                                 gestione_preferiti(user_id)
-                            elif choice == "1":
+                            elif scelta == "1":
                                 controllo_preferiti(user_id)
-                            elif choice == "1":
+                            elif scelta == "2":
+                                rimozione_preferiti(user_id)
+                            elif scelta == "3":
                                 print("Ritorno alla schermata principale")
                                 break
+                            else:
+                                print("Scelta non valida!")
                     elif choice == "1":
                         print("Arrivederci!")
                         break
                     else:
                         print("Scelta non valida!")
-            elif choice == "3":
-                break
-            else:
-                print("Scelta non valida!") 
+        elif choice == "3":
+            break  # <-- Spostato qui correttamente
+        else:
+            print("Scelta non valida!")
+
 
 if __name__ == "__main__":
     main()
