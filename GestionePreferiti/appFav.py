@@ -1,7 +1,9 @@
 from db_fav import add_to_favorites
 from flask import Flask, request, jsonify
 import json
+from circuitbreaker import CircuitBreaker, CircuitBreakerError
 
+circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
 app = Flask(__name__)
 
 def carica_fiumi_sottobacini():
@@ -27,6 +29,7 @@ def get_sottobacini(fiume):
         return jsonify({"error": "Fiume non trovato"}), 404
     return jsonify(fiumi_sottobacini[fiume]), 200
 
+@circuit_breaker
 @app.route("/gestione_preferiti", methods=["POST"])
 def gestione_preferiti():
     data = request.json
@@ -34,24 +37,25 @@ def gestione_preferiti():
     fiume = data.get("fiume")
     sottobacino = data.get("sottobacino")
 
-    # Controlla che tutti i dati necessari siano forniti
+    # Controllo che tutti i dati necessari siano forniti
     if not user_id or not fiume or not sottobacino:
         return jsonify({"error": "Dati incompleti"}), 400
 
-    # Verifica che il fiume e il sottobacino esistano nel file fiumi_sottobacini
+    # Verifico che il fiume e il sottobacino esistano nel file fiumi_sottobacini
     if fiume not in fiumi_sottobacini:
         return jsonify({"error": f"Fiume '{fiume}' non trovato"}), 404
     
     if sottobacino not in fiumi_sottobacini[fiume]:
         return jsonify({"error": f"Sottobacino '{sottobacino}' non trovato nel fiume {fiume}"}), 404
 
-    try:
-        # Aggiungi il fiume e il sottobacino ai preferiti dell'utente
-        add_to_favorites(user_id, fiume, sottobacino)
+   try:
+        # Aggiungo il fiume e il sottobacino ai preferiti dell'utente, protetto dal Circuit Breaker
+        circuit_breaker.add_to_favorites(user_id, fiume, sottobacino)  # Usa il Circuit Breaker
         return jsonify({"message": f"{sottobacino} aggiunto ai preferiti di {fiume}!"}), 200
+    except CircuitBreakerError:
+        return jsonify({"error": "Circuit Breaker attivato, il servizio non è disponibile."}), 503
     except Exception as e:
         return jsonify({"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}), 500
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5004)
