@@ -28,6 +28,7 @@ try:
 except (NoCredentialsError, PartialCredentialsError):
     print("Errore: Credenziali AWS mancanti o incomplete. Configurare con `aws configure`.")
 
+@circuit_breaker
 def create_user(username, password):
     """ Registra un nuovo utente nel database """
     user_id = str(uuid.uuid4())  # Genera un ID univoco
@@ -40,6 +41,7 @@ def create_user(username, password):
     table.put_item(Item=item)
     return user_id
 
+@circuit_breaker
 def get_user(username):
     """ Recupera un utente per nome utente """
     response = table.scan(
