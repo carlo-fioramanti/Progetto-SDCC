@@ -48,7 +48,7 @@ def gestione_preferiti():
     if sottobacino not in fiumi_sottobacini[fiume]:
         return jsonify({"error": f"Sottobacino '{sottobacino}' non trovato nel fiume {fiume}"}), 404
 
-   try:
+    try:
         # Aggiungo il fiume e il sottobacino ai preferiti dell'utente, protetto dal Circuit Breaker
         circuit_breaker.add_to_favorites(user_id, fiume, sottobacino)  # Usa il Circuit Breaker
         return jsonify({"message": f"{sottobacino} aggiunto ai preferiti di {fiume}!"}), 200

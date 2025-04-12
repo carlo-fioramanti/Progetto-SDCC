@@ -33,17 +33,19 @@ def register():
 
 @circuit_breaker
 def login():
-    username = input("Inserisci username: ")
-    password = input("Inserisci password: ")
-    response = requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
 
-    # Verifica se il login è andato a buon fine
-    if response.status_code == 200:
-        print(response.json()) 
-        return response.json()["user_id"]  
-    else:
-        print("Login fallito! Controlla le tue credenziali.")
-        return
+    try: 
+        username = input("Inserisci username: ")
+        password = input("Inserisci password: ")
+        response = requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
+
+        # Verifica se il login è andato a buon fine
+        if response.status_code == 200:
+            print(response.json()) 
+            return response.json()["user_id"]  
+        else:
+            print("Login fallito! Controlla le tue credenziali.")
+            return
     except CircuitBreakerError:
         print("Circuit Breaker attivato: il servizio non è disponibile.")
     except requests.exceptions.RequestException as e:
