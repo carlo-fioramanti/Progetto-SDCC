@@ -4,6 +4,8 @@ from flask import Flask, request, jsonify
 import requests
 import os
 import json
+from circuitbreaker import CircuitBreaker, CircuitBreakerError
+
 
 circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
 app = Flask(__name__)
@@ -66,6 +68,7 @@ def gestione_preferiti():
 def controllo_preferiti():
     data =  request.json
     user_id = data.get("user_id")
+    da_kafka = data.get("da_kafka", False)
 
     # Step 1: Ottieni i dati grezzi dai sensori dalla raccolta
     raccolta_response = requests.get(API_RACCOLTA)
@@ -73,8 +76,9 @@ def controllo_preferiti():
         return jsonify({"error": "Errore nel recupero dei dati dalla raccolta"}), 500
     
     dati = raccolta_response.json()
+    payload = {"dati": dati, "da_kafka": da_kafka}
 
-    analisi_response = requests.post(API_ANALISI, json=dati)
+    analisi_response = requests.post(API_ANALISI, json=payload)
     if analisi_response.status_code != 200:
         return jsonify({"error": "Errore nell'analisi dei dati"}), 500
 

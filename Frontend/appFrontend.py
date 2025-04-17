@@ -1,6 +1,11 @@
 import requests
 import urllib.parse
 from circuitbreaker import CircuitBreaker, CircuitBreakerError
+import threading
+import json
+from confluent_kafka import Consumer, KafkaError 
+import time
+from datetime import datetime
 
 
 API_URL_gestioneutente = "http://gestioneutente:5001"
@@ -15,7 +20,7 @@ def register():
         password = input("Inserisci password: ")
         
         # Effettua la richiesta POST per registrarsi
-        response = requests.post(f"{API_URL_gestioneuntente}/register", json={"username": username, "password": password})
+        response = requests.post(f"{API_URL_gestioneutente}/register", json={"username": username, "password": password})
 
         # Gestisci la risposta
         if response.status_code == 200:
@@ -33,17 +38,18 @@ def register():
 
 @circuit_breaker
 def login():
-    username = input("Inserisci username: ")
-    password = input("Inserisci password: ")
-    response = requests.post(f"{API_URL_gestioneuntente}/login", json={"username": username, "password": password})
+    try:
+        username = input("Inserisci username: ")
+        password = input("Inserisci password: ")
+        response = requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
 
-    # Verifica se il login è andato a buon fine
-    if response.status_code == 200:
-        print(response.json()) 
-        return response.json()["user_id"]  
-    else:
-        print("Login fallito! Controlla le tue credenziali.")
-        return
+        # Verifica se il login è andato a buon fine
+        if response.status_code == 200:
+            print(response.json()) 
+            return response.json()["user_id"]  
+        else:
+            print("Login fallito! Controlla le tue credenziali.")
+            return
     except CircuitBreakerError:
         print("Circuit Breaker attivato: il servizio non è disponibile.")
     except requests.exceptions.RequestException as e:
@@ -102,6 +108,100 @@ def gestione_preferiti(user_id):
     except Exception as e:
         print(f"Errore imprevisto: {e}")
 
+# # funzione per estrarre da tutte le notifiche solo l'ultima per ogni topic
+
+# def estrai_ultime_notifiche_per_topic(notifiche_per_topic):
+#     ultime_per_topic = {}
+
+#     for topic, notifiche in notifiche_per_topic.items():
+#         notifica_recente = max(
+#             notifiche,
+#             key=lambda n: datetime.fromisoformat(n["timestamp"])
+#         )
+#         ultime_per_topic[topic] = notifica_recente
+
+#     return ultime_per_topic
+
+
+def kafka_consumer_per_utente(user_id):
+    # Recupera i preferiti dell'utente
+    response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json={"user_id": user_id, "da_kafka": True})
+    if response.status_code != 200:
+        print("❌ Errore nel recupero dei preferiti.")
+        return
+
+    preferiti = response.json()
+    topic_list = [
+        f"{p['fiume'].replace(' ', '_').lower()}-{p['sottobacino'].replace(' ', '_').lower()}"
+        for p in preferiti
+    ]
+
+    consumer_config = {
+        'bootstrap.servers': 'kafka:9092',
+        'group.id': f'frontend_{user_id}_{threading.get_ident()}',
+        'auto.offset.reset': 'earliest'
+    }
+
+
+    consumer = Consumer(consumer_config)
+    consumer.subscribe(topic_list)
+
+    print("🟢 In ascolto delle notifiche Kafka per i preferiti...")
+
+    notifiche_per_topic = {}
+    ultime_stampate = {}
+    c = 0
+    polling_vuoti = 0
+    max_polling_vuoti = 5  # ad esempio: 3 polling vuoti consecutivi = fine
+
+    try:
+        
+        while polling_vuoti < max_polling_vuoti:
+            c += 1
+            print(f"********POLLING NUMERO: {c}********")
+            msg = consumer.poll(1.0)
+            if msg is None:
+                polling_vuoti += 1
+                continue
+            
+            if msg is None:
+                continue
+            if msg.error():
+                if msg.error().code() == KafkaError.UNKNOWN_TOPIC_OR_PART:
+                    print(f"⚠️ Topic non ancora creato: {msg.topic()}")
+                else:
+                    print(f"⚠️ Errore Kafka: {msg.error()}")
+                continue
+
+            data = json.loads(msg.value().decode('utf-8'))
+            topic = msg.topic()
+            timestamp = data.get("timestamp")
+
+            # tiene solo l'ultima per timestamp
+            esistente = notifiche_per_topic.get(topic)
+            if esistente is None or esistente["timestamp"] < timestamp:
+                notifiche_per_topic[topic] = data
+
+    except KeyboardInterrupt:
+        print("🛑 Interruzione consumer ricevuta.")
+    finally:
+        consumer.close()
+
+    # 3. Stampo solo l'ultima per ogni topic
+    print("\n📥 Notifiche più recenti per ciascun topic:")
+    for topic, notifica in notifiche_per_topic.items():
+        print(f"📢 Topic: {topic}")
+        print(f"   Fiume: {notifica['fiume']}")
+        print(f"   Sottobacino: {notifica['sottobacino']}")
+        print(f"   Fascia: {notifica['fascia']}")
+        print(f"   Timestamp: {notifica['timestamp']}")
+        print("-" * 40)
+
+
+    
+
+
+
 def controllo_preferiti(user_id):
     response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json = {"user_id": user_id})
     if response.status_code != 200:
@@ -116,6 +216,37 @@ def controllo_preferiti(user_id):
         fascia_allerta = pref.get("allerta", "")
         print(f"{idx}. Fiume: {fiume}, Sottobacino: {sottobacino}, Allerta: {fascia_allerta}")
 
+def rimozione_preferiti(user_id):
+    response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json = {"user_id": user_id})
+    if response.status_code != 200:
+        print("Errore nel recupero dei preferiti.")
+        return
+    preferiti = response.json()
+    print("\nFiumi preferiti:")
+    for idx, pref in enumerate(preferiti):
+        print(f"{idx}. Fiume: {pref['fiume']} | Sottobacino: {pref['sottobacino']}")
+
+    try:
+        num_fiume = int(input("Seleziona il numero del fiume da rimuovere: "))
+        if num_fiume < 0 or num_fiume >= len(preferiti):
+            print("Numero selezionato non valido")
+            return
+    except ValueError:
+        print("Input non valido. Inserisci un numero.")
+        return
+
+    fiume_da_rimuovere = preferiti[num_fiume]["fiume"]
+    sottobacino_da_rimuovere = preferiti[num_fiume]["sottobacino"]
+
+    response = requests.delete(
+        f"{API_URL_gestionepreferiti}/rimozione_preferiti",
+        json={"user_id": user_id, "fiume": fiume_da_rimuovere, "sottobacino": sottobacino_da_rimuovere}
+    )
+
+    if response.status_code == 200:
+        print("✅ Preferito rimosso correttamente.")
+    else:
+        print(f"Errore nella rimozione: {response.text}")
 
 def main():
     while True:
@@ -126,35 +257,34 @@ def main():
         elif choice == "2":
             user_id = login()
             if user_id:
+                threading.Thread(target=kafka_consumer_per_utente, args=(user_id,), daemon=True).start()
+                print("Caricamento delle notifiche in corso:")
+                time.sleep(15)
                 while True:
-                    print("\n--- Schermata principale ---")
-                    print("0. Gestione Preferiti")
-                    print("1. Esci")
-                    choice = input("Scegli un'opzione: ")
-
-                    if choice == "0":
-                        while True:
-                            print("\n--- Schermata Gestione Preferiti ---")
-                            print("0. Aggiungi Preferiti")
-                            print("1. Controlla Preferiti")
-                            print("2. Torna Alla Schermata Principale")
-                            choice = input("Scegli un'opzione: ")
-                            if choice == "0":
-                                gestione_preferiti(user_id)
-                            elif choice == "1":
-                                controllo_preferiti(user_id)
-                            elif choice == "1":
-                                print("Ritorno alla schermata principale")
-                                break
-                    elif choice == "1":
-                        print("Arrivederci!")
+                    print("\n--- Menu ---")
+                    print("0. Aggiungi Preferiti")
+                    print("1. Controlla Preferiti")
+                    print("2. Rimuovi Preferiti")
+                    print("3. Esci")
+                    scelta = input("Scegli un'opzione: ")
+                    if scelta == "0":
+                        gestione_preferiti(user_id)
+                    elif scelta == "1":
+                        controllo_preferiti(user_id)
+                    elif scelta == "2":
+                        rimozione_preferiti(user_id)
+                    elif scelta == "3":
+                        print("Logout effettuato.")
                         break
                     else:
                         print("Scelta non valida!")
-            elif choice == "3":
-                break
-            else:
-                print("Scelta non valida!") 
+        elif choice == "3":
+            print("Arrivederci!")
+            break
+        else:
+            print("Scelta non valida!")
+
+
 
 if __name__ == "__main__":
     main()

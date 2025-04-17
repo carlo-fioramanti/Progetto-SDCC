@@ -22,20 +22,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
-  # subscriber fittizio per analisi_dati (Subscriber)
-  subscriber:
-    build:
-      context: ./Notifica
-      dockerfile: Dockerfile
-    command: python3 subscriber.py
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-
-
-
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
 
   # Microservizio Segnalazione Utenti (Publisher)
@@ -62,24 +49,7 @@ services:
       - "5001:5001"
     depends_on:
       - kafka
-    #environment:
-     # KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
-  #    analisi-dati:
-  #  build: ./Analisi Dati
-  #  container_name: analisi-dati
-  #  ports:
-  #    - "5001:5001"
-
-  # Microservizio Frontend
-  # frontend:
-  #   build:
-  #     context: ./Frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     API_URL: http://localhost:3000
 
   # Microservizio Raccolta Dati
   raccolta_dati:
@@ -104,7 +74,7 @@ services:
 
   gestionepreferiti:
     build: ./GestionePreferiti  
-    container_name: GestionePreferiti
+    container_name: gestionePreferiti
     depends_on:
       - dynamodb  
       - gestioneutente
@@ -137,8 +107,21 @@ services:
     depends_on:
       - gestioneutente
       - gestionepreferiti
+      - kafka
+
     stdin_open: true
     tty: true
     ports:
       - "3000:3000" 
+
+
+  init-topics:
+    build: ./InizializzazioneTopic
+    container_name: init-topics
+    command: python3 init_topics.py
+    depends_on:
+      - kafka
+    volumes:
+      - ./InizializzazioneTopic/fiumi_sottobacini.json:/app/fiumi_sottobacini.json
+
 
