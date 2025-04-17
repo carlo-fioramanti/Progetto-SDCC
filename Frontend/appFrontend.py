@@ -50,6 +50,13 @@ def login():
         else:
             print("Login fallito! Controlla le tue credenziali.")
             return
+        # Verifica se il login è andato a buon fine
+        if response.status_code == 200:
+            print(response.json()) 
+            return response.json()["user_id"]  
+        else:
+            print("Login fallito! Controlla le tue credenziali.")
+            return
     except CircuitBreakerError:
         print("Circuit Breaker attivato: il servizio non è disponibile.")
     except requests.exceptions.RequestException as e:
