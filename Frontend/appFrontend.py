@@ -115,19 +115,6 @@ def gestione_preferiti(user_id):
     except Exception as e:
         print(f"Errore imprevisto: {e}")
 
-# # funzione per estrarre da tutte le notifiche solo l'ultima per ogni topic
-
-# def estrai_ultime_notifiche_per_topic(notifiche_per_topic):
-#     ultime_per_topic = {}
-
-#     for topic, notifiche in notifiche_per_topic.items():
-#         notifica_recente = max(
-#             notifiche,
-#             key=lambda n: datetime.fromisoformat(n["timestamp"])
-#         )
-#         ultime_per_topic[topic] = notifica_recente
-
-#     return ultime_per_topic
 
 
 def kafka_consumer_per_utente(user_id):
@@ -164,8 +151,8 @@ def kafka_consumer_per_utente(user_id):
     try:
         
         while polling_vuoti < max_polling_vuoti:
-            c += 1
-            print(f"********POLLING NUMERO: {c}********")
+            # c += 1
+            # print(f"********POLLING NUMERO: {c}********")
             msg = consumer.poll(1.0)
             if msg is None:
                 polling_vuoti += 1
@@ -266,7 +253,7 @@ def main():
             if user_id:
                 threading.Thread(target=kafka_consumer_per_utente, args=(user_id,), daemon=True).start()
                 print("Caricamento delle notifiche in corso:")
-                time.sleep(15)
+                time.sleep(35)
                 while True:
                     print("\n--- Menu ---")
                     print("0. Aggiungi Preferiti")
