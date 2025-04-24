@@ -10,7 +10,7 @@ from datetime import datetime
 
 API_URL_gestioneutente = "http://gestioneutente:5001"
 API_URL_gestionepreferiti = "http://GestionePreferiti:5004"
-API_URL_notifiche = "http://notifica:5006"
+API_URL_notifiche = "http://notifica:5007"
 API_URL_raccoltadati = "http://raccolta-dati:5005/fetch_data"
 API_URL_segnalazioni = "http://segnalazione-utenti:5006"
 

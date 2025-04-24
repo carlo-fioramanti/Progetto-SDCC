@@ -138,7 +138,7 @@ services:
     environment:
       PREFERITI_URL: "http://gestionePreferiti:5004/controllo_preferiti"
     ports:
-      - "5006:5006"
+      - "5007:5007"
 
 
 
