@@ -10,6 +10,7 @@ from datetime import datetime
 
 API_URL_gestioneutente = "http://gestioneutente:5001"
 API_URL_gestionepreferiti = "http://GestionePreferiti:5004"
+API_URL_notifiche = "http://notifica:5006"
 
 circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
 
@@ -117,83 +118,22 @@ def gestione_preferiti(user_id):
 
 
 
-def kafka_consumer_per_utente(user_id):
-    # Recupera i preferiti dell'utente
-    response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json={"user_id": user_id, "da_kafka": True})
-    if response.status_code != 200:
-        print("❌ Errore nel recupero dei preferiti.")
-        return
-
-    preferiti = response.json()
-    topic_list = [
-        f"{p['fiume'].replace(' ', '_').lower()}-{p['sottobacino'].replace(' ', '_').lower()}"
-        for p in preferiti
-    ]
-
-    consumer_config = {
-        'bootstrap.servers': 'kafka:9092',
-        'group.id': f'frontend_{user_id}_{threading.get_ident()}',
-        'auto.offset.reset': 'earliest'
-    }
-
-
-    consumer = Consumer(consumer_config)
-    consumer.subscribe(topic_list)
-
-    print("🟢 In ascolto delle notifiche Kafka per i preferiti...")
-
-    notifiche_per_topic = {}
-    ultime_stampate = {}
-    c = 0
-    polling_vuoti = 0
-    max_polling_vuoti = 5  # ad esempio: 3 polling vuoti consecutivi = fine
-
+def print_notifiche(user_id):
     try:
+        response = requests.post(f"{API_URL_notifiche}/notifiche", json={"user_id": user_id})
+        if response.status_code != 200:
+            print("❌ Errore nella ricezione delle notifiche.")
+            return
         
-        while polling_vuoti < max_polling_vuoti:
-            # c += 1
-            # print(f"********POLLING NUMERO: {c}********")
-            msg = consumer.poll(1.0)
-            if msg is None:
-                polling_vuoti += 1
-                continue
-            
-            if msg is None:
-                continue
-            if msg.error():
-                if msg.error().code() == KafkaError.UNKNOWN_TOPIC_OR_PART:
-                    print(f"⚠️ Topic non ancora creato: {msg.topic()}")
-                else:
-                    print(f"⚠️ Errore Kafka: {msg.error()}")
-                continue
-
-            data = json.loads(msg.value().decode('utf-8'))
-            topic = msg.topic()
-            timestamp = data.get("timestamp")
-
-            # tiene solo l'ultima per timestamp
-            esistente = notifiche_per_topic.get(topic)
-            if esistente is None or esistente["timestamp"] < timestamp:
-                notifiche_per_topic[topic] = data
-
-    except KeyboardInterrupt:
-        print("🛑 Interruzione consumer ricevuta.")
-    finally:
-        consumer.close()
-
-    # 3. Stampo solo l'ultima per ogni topic
-    print("\n📥 Notifiche più recenti per ciascun topic:")
-    for topic, notifica in notifiche_per_topic.items():
-        print(f"📢 Topic: {topic}")
-        print(f"   Fiume: {notifica['fiume']}")
-        print(f"   Sottobacino: {notifica['sottobacino']}")
-        print(f"   Fascia: {notifica['fascia']}")
-        print(f"   Timestamp: {notifica['timestamp']}")
-        print("-" * 40)
-
-
-    
-
+        notifiche_per_topic = response.json()
+        for topic, notifica in notifiche_per_topic.items():
+            print(f"📢 Fiume: {notifica['fiume']}")
+            print(f"   Sottobacino: {notifica['sottobacino']}")
+            print(f"   Fascia: {notifica['fascia']}")
+            print(f"   Data e Ora: {notifica['timestamp']}")
+            print("-" * 40)
+    except Exception as e:
+        print("⚠️ Errore durante la chiamata al microservizio notifica:", e)
 
 
 def controllo_preferiti(user_id):
@@ -251,9 +191,8 @@ def main():
         elif choice == "2":
             user_id = login()
             if user_id:
-                threading.Thread(target=kafka_consumer_per_utente, args=(user_id,), daemon=True).start()
                 print("Caricamento delle notifiche in corso:")
-                time.sleep(35)
+                print_notifiche(user_id)
                 while True:
                     print("\n--- Menu ---")
                     print("0. Aggiungi Preferiti")

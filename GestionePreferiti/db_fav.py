@@ -62,13 +62,15 @@ def show_favorites(user_id, dati_fiumi):
 
     favorites = []
     for p in preferiti:
-        fiume = p['fiume']
-        sottobacino = p['sottobacino']
-
+        fiume = p['fiume']['S'] if isinstance(p['fiume'], dict) else p['fiume']
+        sottobacino = p['sottobacino']['S'] if isinstance(p['sottobacino'], dict) else p['sottobacino']
+        # print(f"controllo del fiume {fiume}-{sottobacino}", flush=True)
         fascia_allerta = "non disponibile"
 
         for entry in dati_fiumi:
-            if entry["fiume"] == fiume and entry["sottobacino"] == sottobacino:
+            # print(entry)
+            # print(f"{entry["fiume"]},{entry["sottobacino"]}")
+            if entry["fiume"]== fiume and entry["sottobacino"] == sottobacino:
                 fascia_allerta = entry["fascia"]
                 break
 
@@ -77,5 +79,5 @@ def show_favorites(user_id, dati_fiumi):
             "sottobacino": sottobacino,
             "allerta": fascia_allerta
         })
-
+    
     return favorites
