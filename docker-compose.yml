@@ -25,14 +25,17 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
 
-  # Microservizio Segnalazione Utenti (Publisher)
+  # Microservizio Segnalazione Utenti 
   segnalazione_utenti:
     build:
       context: ./Segnalazione Utenti
       dockerfile: Dockerfile
-    command: python3 prova.py
+    container_name: segnalazione-utenti
+    command: python3 segnalazioneUtenti.py
     depends_on:
       - kafka
+    ports:
+      - "5006:5006"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 

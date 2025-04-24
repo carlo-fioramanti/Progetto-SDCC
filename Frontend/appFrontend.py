@@ -11,6 +11,10 @@ from datetime import datetime
 API_URL_gestioneutente = "http://gestioneutente:5001"
 API_URL_gestionepreferiti = "http://GestionePreferiti:5004"
 API_URL_notifiche = "http://notifica:5006"
+API_URL_raccoltadati = "http://raccolta-dati:5005/fetch_data"
+API_URL_segnalazioni = "http://segnalazione-utenti:5006"
+
+
 
 circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
 
@@ -117,6 +121,71 @@ def gestione_preferiti(user_id):
         print(f"Errore imprevisto: {e}")
 
 
+def segnala_livello_critico():
+    try:
+        # Recupera la lista dei fiumi
+        response = requests.get(f"{API_URL_segnalazioni}/fiumi")
+        if response.status_code != 200:
+            print("Errore nel recupero dei fiumi.")
+            return
+        fiumi = response.json()
+
+        print("\nSeleziona un fiume:")
+        for idx, fiume in enumerate(fiumi):
+            print(f"{idx}. {fiume}")
+        scelta_fiume = int(input("Numero del fiume: "))
+        fiume_selezionato = fiumi[scelta_fiume]
+
+        # Recupera i sottobacini per il fiume selezionato
+        fiume_encoded = urllib.parse.quote(fiume_selezionato)
+        response = requests.get(f"{API_URL_gestionepreferiti}/sottobacini/{fiume_encoded}")
+        if response.status_code != 200:
+            print("Errore nel recupero dei sottobacini.")
+            return
+        sottobacini = response.json()
+
+        print("\nSeleziona un sottobacino:")
+        for idx, sottobacino in enumerate(sottobacini):
+            print(f"{idx}. {sottobacino}")
+        scelta_sottobacino = int(input("Numero del sottobacino: "))
+        sottobacino_selezionato = sottobacini[scelta_sottobacino]
+
+        fasce = {
+            "arancione": 9.0,
+            "rossa": 12.0
+        }   
+
+        print("\nSeleziona una fascia di livello critico:")
+        fasce_keys = list(fasce.keys())
+        for idx, fascia in enumerate(fasce_keys):
+            print(f"{idx}. {fascia} (>= {fasce[fascia]} metri)")
+        scelta_fascia = int(input("Numero della fascia: "))
+        if scelta_fascia < 0 or scelta_fascia >= len(fasce_keys):
+            print("Scelta non valida.")
+            return
+        fascia_selezionata = fasce_keys[scelta_fascia]
+
+        # Gestisci i preferiti
+        response = requests.post(f"{API_URL_segnalazioni}/segnala", json={
+            "fiume": fiume_selezionato,
+            "sottobacino": sottobacino_selezionato,
+            "fascia": fascia_selezionata
+        })
+
+        if response.status_code == 200:
+            print("Segnalazione inviata correttamente!")
+        else:
+            print(f"Errore: {response.status_code} - {response.text}")
+
+    except CircuitBreakerError:
+        print("Circuit Breaker attivato: il servizio non è disponibile.")
+    except requests.exceptions.RequestException as e:
+        print(f"Errore nella richiesta: {e}")
+    except Exception as e:
+        print(f"Errore imprevisto: {e}")
+
+
+
 
 def print_notifiche(user_id):
     try:
@@ -134,7 +203,6 @@ def print_notifiche(user_id):
             print("-" * 40)
     except Exception as e:
         print("⚠️ Errore durante la chiamata al microservizio notifica:", e)
-
 
 def controllo_preferiti(user_id):
     response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json = {"user_id": user_id})
@@ -198,7 +266,8 @@ def main():
                     print("0. Aggiungi Preferiti")
                     print("1. Controlla Preferiti")
                     print("2. Rimuovi Preferiti")
-                    print("3. Esci")
+                    print("3. Segnala fiume")
+                    print("4. Esci")
                     scelta = input("Scegli un'opzione: ")
                     if scelta == "0":
                         gestione_preferiti(user_id)
@@ -207,6 +276,8 @@ def main():
                     elif scelta == "2":
                         rimozione_preferiti(user_id)
                     elif scelta == "3":
+                        segnala_livello_critico()
+                    elif scelta == "4":
                         print("Logout effettuato.")
                         break
                     else:

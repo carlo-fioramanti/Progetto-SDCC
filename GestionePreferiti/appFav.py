@@ -57,7 +57,7 @@ def gestione_preferiti():
 
     try:
         # Aggiungo il fiume e il sottobacino ai preferiti dell'utente, protetto dal Circuit Breaker
-        circuit_breaker.add_to_favorites(user_id, fiume, sottobacino)  # Usa il Circuit Breaker
+        add_to_favorites(user_id, fiume, sottobacino)  # Usa il Circuit Breaker
         return jsonify({"message": f"{sottobacino} aggiunto ai preferiti di {fiume}!"}), 200
     except CircuitBreakerError:
         return jsonify({"error": "Circuit Breaker attivato, il servizio non è disponibile."}), 503
@@ -66,27 +66,33 @@ def gestione_preferiti():
 
 @app.route("/controllo_preferiti", methods=["POST"])
 def controllo_preferiti():
-    data =  request.json
-    user_id = data.get("user_id")
-    da_kafka = data.get("da_kafka", False)
+    try:    
+        data =  request.json
+        user_id = data.get("user_id")
+        da_kafka = data.get("da_kafka", False)
 
-    # Step 1: Ottieni i dati grezzi dai sensori dalla raccolta
-    raccolta_response = requests.get(API_RACCOLTA)
-    if raccolta_response.status_code != 200:
-        return jsonify({"error": "Errore nel recupero dei dati dalla raccolta"}), 500
-    
-    dati = raccolta_response.json()
-    payload = {"dati": dati, "da_kafka": da_kafka}
+        # Step 1: Ottieni i dati grezzi dai sensori dalla raccolta
+        raccolta_response = requests.get(API_RACCOLTA)
+        if raccolta_response.status_code != 200:
+            return jsonify({"error": "Errore nel recupero dei dati dalla raccolta"}), 500
+        
+        dati = raccolta_response.json()
+        payload = {"dati": dati, "da_kafka": da_kafka}
 
-    analisi_response = requests.post(API_ANALISI, json=payload)
-    if analisi_response.status_code != 200:
-        return jsonify({"error": "Errore nell'analisi dei dati"}), 500
+        analisi_response = requests.post(API_ANALISI, json=payload)
+        if analisi_response.status_code != 200:
+            return jsonify({"error": "Errore nell'analisi dei dati"}), 500
 
-    dati_fiumi = analisi_response.json()
-    # Una volta ottenuto l'id dello user, faccio la query al db per prendere la lista dei preferiti
-    favorites = show_favorites(user_id, dati_fiumi)
-    # return favorites
-    return jsonify(favorites)
+        dati_fiumi = analisi_response.json()
+        # Una volta ottenuto l'id dello user, faccio la query al db per prendere la lista dei preferiti
+        favorites = show_favorites(user_id, dati_fiumi)
+        # return favorites
+        return jsonify(favorites)
+    except CircuitBreakerError:
+        return jsonify({"error": "Circuit Breaker attivato, il servizio non è disponibile."}), 503
+    except Exception as e:
+        return jsonify({"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5004)

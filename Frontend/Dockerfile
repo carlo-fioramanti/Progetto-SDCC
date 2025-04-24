@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 COPY . .
 
 # Installa le dipendenze Python
-RUN pip install --no-cache-dir -r requirementsFrontend.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 CMD ["python", "appFrontend.py"]
 
