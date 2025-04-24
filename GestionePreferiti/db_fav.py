@@ -50,32 +50,35 @@ def add_to_favorites(user_id, fiume, sottobacino):
         table.put_item(Item=user_favorites)
         return {"message": f"{sottobacino} aggiunto ai preferiti del fiume {fiume}!"}
 
-    except CircuitBreakerError:
-        return {"error": "Circuit Breaker attivato, il servizio DynamoDB non è disponibile."}
     except Exception as e:
         print(f"Errore durante l'aggiunta ai preferiti: {e}")
         return {"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}
     
+@circuit_breaker    
 def show_favorites(user_id, dati_fiumi):
-    response = table.get_item(Key={'id_user': user_id})
-    preferiti = response['Item']['preferiti']
+    try:
+        response = table.get_item(Key={'id_user': user_id})
+        preferiti = response['Item']['preferiti']
 
-    favorites = []
-    for p in preferiti:
-        fiume = p['fiume']
-        sottobacino = p['sottobacino']
+        favorites = []
+        for p in preferiti:
+            fiume = p['fiume']
+            sottobacino = p['sottobacino']
 
-        fascia_allerta = "non disponibile"
+            fascia_allerta = "non disponibile"
 
-        for entry in dati_fiumi:
-            if entry["fiume"] == fiume and entry["sottobacino"] == sottobacino:
-                fascia_allerta = entry["fascia"]
-                break
+            for entry in dati_fiumi:
+                if entry["fiume"] == fiume and entry["sottobacino"] == sottobacino:
+                    fascia_allerta = entry["fascia"]
+                    break
 
-        favorites.append({
-            "fiume": fiume,
-            "sottobacino": sottobacino,
-            "allerta": fascia_allerta
-        })
+            favorites.append({
+                "fiume": fiume,
+                "sottobacino": sottobacino,
+                "allerta": fascia_allerta
+            })
 
-    return favorites
+        return favorites
+    except Exception as e:
+        print(f"Errore durante l'aggiunta ai preferiti: {e}")
+        return {"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}
