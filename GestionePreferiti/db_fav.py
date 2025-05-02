@@ -62,13 +62,15 @@ def show_favorites(user_id, dati_fiumi):
 
         favorites = []
         for p in preferiti:
-            fiume = p['fiume']
-            sottobacino = p['sottobacino']
-
+            fiume = p['fiume']['S'] if isinstance(p['fiume'], dict) else p['fiume']
+            sottobacino = p['sottobacino']['S'] if isinstance(p['sottobacino'], dict) else p['sottobacino']
+            # print(f"controllo del fiume {fiume}-{sottobacino}", flush=True)
             fascia_allerta = "non disponibile"
 
             for entry in dati_fiumi:
-                if entry["fiume"] == fiume and entry["sottobacino"] == sottobacino:
+                # print(entry)
+                # print(f"{entry["fiume"]},{entry["sottobacino"]}")
+                if entry["fiume"]== fiume and entry["sottobacino"] == sottobacino:
                     fascia_allerta = entry["fascia"]
                     break
 
@@ -77,8 +79,33 @@ def show_favorites(user_id, dati_fiumi):
                 "sottobacino": sottobacino,
                 "allerta": fascia_allerta
             })
-
+    
         return favorites
+
     except Exception as e:
         print(f"Errore durante l'aggiunta ai preferiti: {e}")
         return {"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}
+
+def remove_from_favorites(user_id, fiume, sottobacino):
+    response = table.get_item(Key={'id_user': user_id})
+    if 'Item' not in response:
+        raise Exception("Utente non trovato.")
+
+    user_data = response['Item']
+    preferiti = user_data.get('preferiti', [])
+
+    # Rimuovi con confronto "robusto"
+    nuovi_preferiti = []
+    rimosso = False
+    for p in preferiti:
+        if p['fiume'].strip().lower() == fiume.strip().lower() and p['sottobacino'].strip().lower() == sottobacino.strip().lower():
+            rimosso = True
+            continue  # salta questo elemento
+        nuovi_preferiti.append(p)
+
+    if not rimosso:
+        raise Exception("Preferito non trovato.")
+
+    # Aggiorna la lista nel DB
+    user_data['preferiti'] = nuovi_preferiti
+    table.put_item(Item=user_data)

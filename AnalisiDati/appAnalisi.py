@@ -24,7 +24,7 @@ def notifica(fiume, sottobacino, fascia):
         "fiume": fiume,
         "sottobacino": sottobacino,
         "fascia": fascia,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M'),
         "tipo": "allerta del sistema"
     }
 

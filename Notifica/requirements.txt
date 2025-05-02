@@ -1,2 +1,3 @@
-confluent-kafka
 requests
+confluent-kafka
+flask

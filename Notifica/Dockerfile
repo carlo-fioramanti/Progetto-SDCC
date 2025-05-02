@@ -3,11 +3,10 @@ FROM python:3.12
 
 WORKDIR /app
 
-COPY subscriber.py .
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Installa le dipendenze
-RUN pip install confluent-kafka
+COPY appNotifica.py .
 
-# Comando di default (sovrascritto da docker-compose)
-CMD ["python3", "subscriber.py"]
+CMD ["python", "appNotifica.py"]
+

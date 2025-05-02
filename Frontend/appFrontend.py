@@ -8,9 +8,10 @@ import time
 from datetime import datetime
 
 
-#API url
-API_URL_gestioneutente = "http://GestioneUtente:5001"
-API_URL_gestionepreferiti = "http://GestionePreferiti:5004"
+
+API_URL_gestioneutente = "http://gestioneutente:5001"
+API_URL_gestionepreferiti = "http://gestionePreferiti:5004"
+API_URL_notifiche = "http://notifica:5007"
 API_URL_raccoltadati = "http://raccolta-dati:5005/fetch_data"
 API_URL_segnalazioni = "http://segnalazione-utenti:5006"
 
@@ -45,7 +46,7 @@ def register():
         print(f"Errore imprevisto: {e}")
 
 @circuit_breaker
-def login_request(username, password)
+def login_request(username, password):
     return requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
 
 @circuit_breaker
@@ -205,6 +206,7 @@ def segnala_livello_critico():
 def controllapreferiti_request(user_id):
     return requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json={"user_id": user_id, "da_kafka": True})
 
+
 def kafka_consumer_per_utente(user_id):
     # Recupera i preferiti dell'utente
     response = controllapreferiti_request(user_id)
@@ -234,7 +236,13 @@ def kafka_consumer_per_utente(user_id):
     polling_vuoti = 0
     max_polling_vuoti = 5  # ad esempio: 3 polling vuoti consecutivi = fine
 
+
+def print_notifiche(user_id):
     try:
+        response = requests.post(f"{API_URL_notifiche}/notifiche", json={"user_id": user_id})
+        if response.status_code != 200:
+            print("❌ Errore nella ricezione delle notifiche.")
+            return
         
         while polling_vuoti < max_polling_vuoti:
             msg = consumer.poll(1.0)
@@ -281,6 +289,7 @@ def kafka_consumer_per_utente(user_id):
 @circuit_breaker
 def preferiti_request(user_id):
     return requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json = {"user_id": user_id})
+
 
 def controllo_preferiti(user_id):
     response = preferiti_request(user_id)
@@ -341,9 +350,8 @@ def main():
         elif choice == "2":
             user_id = login()
             if user_id:
-                threading.Thread(target=kafka_consumer_per_utente, args=(user_id,), daemon=True).start()
                 print("Caricamento delle notifiche in corso:")
-                time.sleep(35)
+                print_notifiche(user_id)
                 while True:
                     print("\n--- Menu ---")
                     print("0. Aggiungi Preferiti")

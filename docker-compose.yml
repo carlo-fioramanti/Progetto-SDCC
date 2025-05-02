@@ -114,7 +114,7 @@ services:
       - GestioneUtente
       - gestionepreferiti
       - kafka
-
+      - notifica
     stdin_open: true
     tty: true
     ports:
@@ -129,5 +129,20 @@ services:
       - kafka
     volumes:
       - ./InizializzazioneTopic/fiumi_sottobacini.json:/app/fiumi_sottobacini.json
+
+  notifica:
+    build:
+      context: ./Notifica
+    container_name: notifica
+    depends_on:
+      - kafka
+      - gestioneutente
+      - gestionepreferiti
+    environment:
+      PREFERITI_URL: "http://gestionePreferiti:5004/controllo_preferiti"
+    ports:
+      - "5007:5007"
+
+
 
 
