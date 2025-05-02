@@ -15,23 +15,33 @@ API_ANALISI = os.getenv("ANALISI_URL", "http://analisi-dati:5001/analizza")  # n
 app = Flask(__name__)
 
 @circuit_breaker
+def api_request():
+    return requests.get(API_REGIONE)
+
 
 @app.route("/fetch_data", methods=["GET"])
 def fetch_data():
     try:
-        response = requests.get(API_REGIONE)
+        response = api_request()
         response.raise_for_status()  
         return response.json()
+    except CircuitBreakerError:
+        return jsonify({"error": "Circuit Breaker attivato, il servizio non è disponibile."}), 503
     except Exception as e:
         print("Errore:", e)
         return None
 
-# Funzione per inviare i dati all'analisi
 @circuit_breaker
+def analisi_request(dati):
+    return requests.post(API_ANALISI, json=dati)
+
+# Funzione per inviare i dati all'analisi
 def invia_a_analisi(dati):
     try:
-        response = requests.post(API_ANALISI, json=dati)
+        response = analisi_request(dati)
         print("Risposta da analisi-dati:", response.json())
+    except CircuitBreakerError:
+        return jsonify({"error": "Circuit Breaker attivato, il servizio non è disponibile."}), 503
     except Exception as e:
         print("Errore nell'invio a analisi-dati:", e)
 

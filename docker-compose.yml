@@ -25,10 +25,10 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
 
-  # Microservizio Segnalazione Utenti 
+  # Container SegnalazioneUtenti 
   segnalazione_utenti:
     build:
-      context: ./Segnalazione Utenti
+      context: ./SegnalazioneUtenti
       dockerfile: Dockerfile
     container_name: segnalazione-utenti
     command: python3 segnalazioneUtenti.py
@@ -41,10 +41,10 @@ services:
 
 
 
-  # Microservizio Analisi Dati
+  # Container AnalisiDati
   analisi_dati:
     build: 
-      context: ./Analisi Dati
+      context: ./AnalisiDati
       dockerfile: Dockerfile
     container_name: analisi-dati
     command: python3 appAnalisi.py
@@ -54,10 +54,10 @@ services:
       - kafka
 
 
-  # Microservizio Raccolta Dati
+  # Container RaccoltaDati
   raccolta_dati:
     build: 
-      context: ./Raccolta Dati
+      context: ./RaccoltaDati
       dockerfile: Dockerfile
     container_name: raccolta-dati
     command: python3 appRaccolta.py
@@ -68,6 +68,7 @@ services:
     depends_on:
     - analisi_dati
 
+  #Container dynamodb
   dynamodb:
     image: amazon/dynamodb-local
     container_name: dynamodb
@@ -75,12 +76,13 @@ services:
       - "8000:8000"
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb"]
 
+  #Container GestionePreferiti
   gestionepreferiti:
     build: ./GestionePreferiti  
-    container_name: gestionePreferiti
+    container_name: GestionePreferiti
     depends_on:
       - dynamodb  
-      - gestioneutente
+      - GestioneUtente
     environment:  
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
@@ -89,10 +91,10 @@ services:
     ports:
       - "5004:5004"
 
-
-  gestioneutente:
-    build: ./gestioneutente
-    container_name: gestioneutente
+  #Container GestioneUtente
+  GestioneUtente:
+    build: ./GestioneUtente
+    container_name: GestioneUtente
     depends_on:
       - dynamodb
     environment:
@@ -104,11 +106,12 @@ services:
     ports:
      - "5002:5001" 
 
+  #Container Frontend
   frontend:
-    build: ./frontend
-    container_name: frontend
+    build: ./Frontend
+    container_name: Frontend
     depends_on:
-      - gestioneutente
+      - GestioneUtente
       - gestionepreferiti
       - kafka
 
@@ -117,7 +120,7 @@ services:
     ports:
       - "3000:3000" 
 
-
+  #Container InizializzazioneTopic
   init-topics:
     build: ./InizializzazioneTopic
     container_name: init-topics

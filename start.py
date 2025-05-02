@@ -1,7 +1,6 @@
 import subprocess
 import time
-import signal
-import sys
+
 
 def docker_compose_build():
     print("🔧 Eseguo: docker compose build")

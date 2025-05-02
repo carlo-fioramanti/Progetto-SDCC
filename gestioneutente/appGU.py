@@ -1,11 +1,10 @@
 from flask import Flask, request, jsonify
 from db import create_user, get_user
 import bcrypt
-from circuitbreaker import CircuitBreaker, CircuitBreakerError
+from circuitbreaker import CircuitBreakerError
 
 app = Flask(__name__)
 
-circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
 
 def hash_password(password: str) -> str:
     # Genera un salt e hash

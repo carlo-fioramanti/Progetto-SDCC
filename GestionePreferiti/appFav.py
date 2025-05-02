@@ -36,7 +36,7 @@ def get_sottobacini(fiume):
         return jsonify({"error": "Fiume non trovato"}), 404
     return jsonify(fiumi_sottobacini[fiume]), 200
 
-@circuit_breaker
+
 @app.route("/gestione_preferiti", methods=["POST"])
 def gestione_preferiti():
     data = request.json
@@ -64,7 +64,15 @@ def gestione_preferiti():
     except Exception as e:
         return jsonify({"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}), 500
 
-@app.route("/controllo_preferiti", methods=["POST"])
+@circuit_breaker
+def raccolta_request():
+    return requests.get(API_RACCOLTA)
+
+@circuit_breaker
+def analisi_request(payload):
+    return requests.post(API_ANALISI, json=payload)
+
+@app.route("/controllo_prefe.riti", methods=["POST"])
 def controllo_preferiti():
     try:    
         data =  request.json
@@ -72,14 +80,14 @@ def controllo_preferiti():
         da_kafka = data.get("da_kafka", False)
 
         # Step 1: Ottieni i dati grezzi dai sensori dalla raccolta
-        raccolta_response = requests.get(API_RACCOLTA)
+        raccolta_response = raccolta_request
         if raccolta_response.status_code != 200:
             return jsonify({"error": "Errore nel recupero dei dati dalla raccolta"}), 500
         
         dati = raccolta_response.json()
         payload = {"dati": dati, "da_kafka": da_kafka}
 
-        analisi_response = requests.post(API_ANALISI, json=payload)
+        analisi_response = analisi_request(payload)
         if analisi_response.status_code != 200:
             return jsonify({"error": "Errore nell'analisi dei dati"}), 500
 
