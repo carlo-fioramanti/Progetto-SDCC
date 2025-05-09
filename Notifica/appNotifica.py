@@ -6,7 +6,7 @@ import os
 from flask import Flask, request, jsonify 
 
 # API_URL_FRONTEND = os.getenv("FRONTEND_API", "http://frontend:3000/notifiche")
-API_URL_gestionepreferiti = "http://GestionePreferiti:5004"
+API_URL_gestionepreferiti = "http://gestionepreferiti:5004"
 app = Flask(__name__)
 
 # print("🚀 Notifica microservizio avviato correttamente.")
@@ -22,7 +22,6 @@ def pull_notifiche():
     if response.status_code != 200:
         print("❌ Errore nel recupero dei preferiti.")
         return
-
     preferiti = response.json()
     topic_list = [
         f"{p['fiume'].replace(' ', '_').lower()}-{p['sottobacino'].replace(' ', '_').lower()}"
@@ -69,7 +68,7 @@ def pull_notifiche():
             esistente = notifiche_per_topic.get(topic)
             if esistente is None or esistente["timestamp"] < timestamp:
                 notifiche_per_topic[topic] = data
-
+        print(notifiche_per_topic, flush=True)
         return notifiche_per_topic
     except KeyboardInterrupt:
         print("🛑 Interruzione consumer ricevuta.")

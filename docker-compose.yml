@@ -79,10 +79,10 @@ services:
   #Container GestionePreferiti
   gestionepreferiti:
     build: ./GestionePreferiti  
-    container_name: GestionePreferiti
+    container_name: gestionepreferiti
     depends_on:
       - dynamodb  
-      - GestioneUtente
+      - gestioneutente
     environment:  
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
@@ -92,9 +92,9 @@ services:
       - "5004:5004"
 
   #Container GestioneUtente
-  GestioneUtente:
-    build: ./GestioneUtente
-    container_name: GestioneUtente
+  gestioneutente:
+    build: ./gestioneutente
+    container_name: gestioneutente
     depends_on:
       - dynamodb
     environment:
@@ -109,9 +109,9 @@ services:
   #Container Frontend
   frontend:
     build: ./Frontend
-    container_name: Frontend
+    container_name: frontend
     depends_on:
-      - GestioneUtente
+      - gestioneutente
       - gestionepreferiti
       - kafka
       - notifica
@@ -139,7 +139,7 @@ services:
       - gestioneutente
       - gestionepreferiti
     environment:
-      PREFERITI_URL: "http://gestionePreferiti:5004/controllo_preferiti"
+      PREFERITI_URL: "http://gestionepreferiti:5004/controllo_preferiti"
     ports:
       - "5007:5007"
 

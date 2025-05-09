@@ -3,14 +3,61 @@ from flask import Flask, request, jsonify
 import requests
 import os
 import json
+import time
+import boto3
 from circuitbreaker import CircuitBreaker, CircuitBreakerError
 
+#Configuriamo il bucket s3
+s3_client = boto3.client('s3')
+bucket_name = 'cacheapisdcc'
 
 circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
 app = Flask(__name__)
 
 API_ANALISI = os.getenv("ANALISI_URL", "http://analisi-dati:5001/analizza") 
 API_RACCOLTA = os.getenv("RACCOLTA_URL", "http://raccolta-dati:5005/fetch_data")
+
+def save_to_cache(dati):
+    cache_key = "cache.json"
+
+    if isinstance(dati, str):  
+        dati = json.loads(dati)
+    cache_data = {
+        'data': dati,
+        'timestamp': int(time.time())  # Timestamp corrente
+    }
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=cache_key,
+        Body=json.dumps(cache_data),
+        ContentType='application/json'
+    )
+    print(f"Cache aggiornata", flush=True)
+
+@app.route("/cache", methods=["GET"])
+def get_from_cache():
+    cache_key = "cache.json"  
+    try:
+        response = s3_client.get_object(Bucket=bucket_name, Key=cache_key)
+        response_body = response['Body'].read()
+        if not response_body:
+            print("Il file è vuoto.", flush=True)
+            return None 
+        print(f"Contenuto grezzo della risposta: {response_body}", flush=True)
+        cache_data = json.loads(response_body.decode('utf-8'))      
+        
+
+        # Verifichiamo se la cache è recente (5 minuti di validità)
+        current_time = int(time.time())
+        if current_time - cache_data['timestamp'] < 300:  # 300 secondi = 5 minuti
+            print("Cache trovata e ancora valida.", flush=True)
+            return cache_data['data']  # Restituisci tutti i dati nella cache
+        else:
+            print("La cache è scaduta.", flush=True)
+            return None
+    except s3_client.exceptions.NoSuchKey:
+        print("Nessuna cache trovata.", flush=True)
+        return None
 
 def carica_fiumi_sottobacini():
     try:
@@ -71,35 +118,46 @@ def raccolta_request():
 def analisi_request(payload):
     return requests.post(API_ANALISI, json=payload)
 
-@app.route("/controllo_prefe.riti", methods=["POST"])
+@app.route("/controllo_preferiti", methods=["POST"])
 def controllo_preferiti():
     try:    
-        data =  request.json
+        data = request.json
         user_id = data.get("user_id")
         da_kafka = data.get("da_kafka", False)
 
-        # Step 1: Ottieni i dati grezzi dai sensori dalla raccolta
-        raccolta_response = raccolta_request
-        if raccolta_response.status_code != 200:
-            return jsonify({"error": "Errore nel recupero dei dati dalla raccolta"}), 500
+        #Controlliamo la cache S3
+        cached_data = get_from_cache()
         
-        dati = raccolta_response.json()
-        payload = {"dati": dati, "da_kafka": da_kafka}
+        if cached_data:
+            print("cache non vuota", flush=True)
+            # Se la cache è valida, ritorniamo i dati dalla cache
+            payload = {"dati": cached_data, "da_kafka": da_kafka}
+        else:
+            print("cache vuota", flush=True)
+            # Se la cache è scaduta o non esiste, si fa richiesta all'API
+            raccolta_response = raccolta_request()
+            dati = raccolta_response.json()
+            # Step 4: Salva i dati nella cache S3
+            save_to_cache(dati)
+            payload = {"dati": dati, "da_kafka": da_kafka}
+        
 
+        # Analizziamo i dati
         analisi_response = analisi_request(payload)
         if analisi_response.status_code != 200:
             return jsonify({"error": "Errore nell'analisi dei dati"}), 500
 
         dati_fiumi = analisi_response.json()
+        
         # Una volta ottenuto l'id dello user, faccio la query al db per prendere la lista dei preferiti
         favorites = show_favorites(user_id, dati_fiumi)
-        # return favorites
+
         return jsonify(favorites)
     except CircuitBreakerError:
         return jsonify({"error": "Circuit Breaker attivato, il servizio non è disponibile."}), 503
     except Exception as e:
         return jsonify({"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}), 500
-
+    
 @app.route("/rimozione_preferiti", methods=["DELETE"])
 def rimuovi_preferito():
     data = request.json

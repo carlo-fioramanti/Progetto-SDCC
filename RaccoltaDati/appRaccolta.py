@@ -45,7 +45,9 @@ def invia_a_analisi(dati):
     except Exception as e:
         print("Errore nell'invio a analisi-dati:", e)
 
+
 def main():
+    print("avvio raccolTA dati", flush=True)
     while True:
         try:
             dati = fetch_data()
