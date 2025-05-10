@@ -49,7 +49,7 @@ def get_from_cache():
 
         # Verifichiamo se la cache è recente (5 minuti di validità)
         current_time = int(time.time())
-        if current_time - cache_data['timestamp'] < 300:  # 300 secondi = 5 minuti
+        if current_time - cache_data['timestamp'] < 43.200:  # 12 ore
             print("Cache trovata e ancora valida.", flush=True)
             return cache_data['data']  # Restituisci tutti i dati nella cache
         else:

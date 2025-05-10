@@ -109,3 +109,6 @@ def remove_from_favorites(user_id, fiume, sottobacino):
     # Aggiorna la lista nel DB
     user_data['preferiti'] = nuovi_preferiti
     table.put_item(Item=user_data)
+
+
+        

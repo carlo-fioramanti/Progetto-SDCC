@@ -22,7 +22,6 @@ circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expec
 def register_request(username, password):
     return requests.post(f"{API_URL_gestioneutente}/register", json={"username": username, "password": password})
 
-@circuit_breaker
 def register():
     try:
         username = input("Inserisci username: ")
@@ -48,7 +47,7 @@ def register():
 def login_request(username, password):
     return requests.post(f"{API_URL_gestioneutente}/login", json={"username": username, "password": password})
 
-@circuit_breaker
+
 def login():
     try:
         username = input("Inserisci username: ")

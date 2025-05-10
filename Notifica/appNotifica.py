@@ -3,30 +3,40 @@ import requests
 import json
 import time
 import os
+from circuitbreaker import CircuitBreakerError
 from flask import Flask, request, jsonify 
 
-# API_URL_FRONTEND = os.getenv("FRONTEND_API", "http://frontend:3000/notifiche")
 API_URL_gestionepreferiti = "http://gestionepreferiti:5004"
 app = Flask(__name__)
 
-# print("🚀 Notifica microservizio avviato correttamente.")
+circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
+
+@circuit_breaker
+def preferiti_request(user_id):
+    return requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json={"user_id": user_id, "da_kafka": True})
 
 @app.route("/notifiche", methods=["POST"])
 def pull_notifiche():
-    data = request.json
-    user_id = data.get("user_id")
-    if not user_id:
-        return jsonify({"error": "user_id mancante"}), 400
-    # Recupera i preferiti dell'utente
-    response = requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json={"user_id": user_id, "da_kafka": True})
-    if response.status_code != 200:
-        print("❌ Errore nel recupero dei preferiti.")
-        return
-    preferiti = response.json()
-    topic_list = [
-        f"{p['fiume'].replace(' ', '_').lower()}-{p['sottobacino'].replace(' ', '_').lower()}"
-        for p in preferiti
-    ]
+    try:
+        data = request.json
+        user_id = data.get("user_id")
+        if not user_id:
+            return jsonify({"error": "user_id mancante"}), 400
+        # Recupera i preferiti dell'utente
+        response = preferiti_request(user_id)
+        if response.status_code != 200:
+            print("❌ Errore nel recupero dei preferiti.")
+            return
+        preferiti = response.json()
+        topic_list = [
+            f"{p['fiume'].replace(' ', '_').lower()}-{p['sottobacino'].replace(' ', '_').lower()}"
+            for p in preferiti
+        ]
+    except CircuitBreakerError:
+        return jsonify({"error": "Circuit Breaker attivato, il servizio di registrazione non è disponibile."}), 503
+    except Exception as e:
+        return jsonify({"error": f"Errore durante la registrazione: {str(e)}"}), 500
+
 
     consumer_config = {
         'bootstrap.servers': 'kafka:9092',
