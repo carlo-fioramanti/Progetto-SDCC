@@ -3,29 +3,30 @@ import time
 
 
 def docker_compose_build():
-    print("🔧 Eseguo: docker compose build")
-    subprocess.run(["docker", "compose", "build"], check=True)
+    
+    subprocess.run(["docker", "compose", "build", "--quiet"], check=True)
 
+    
 def docker_compose_up():
-    print("🚀 Eseguo: docker compose up -d")
+    
     subprocess.run(["docker", "compose", "up", "-d"], check=True)
 
 def wait_for_container(container_name, timeout=60):
-    print(f"⏳ Aspetto che il container '{container_name}' sia in esecuzione...")
+    
     for _ in range(timeout):
         result = subprocess.run(
             ["docker", "ps", "-f", f"name={container_name}", "--format", "{{.Status}}"],
             capture_output=True, text=True
         )
         if "Up" in result.stdout:
-            print(f"✅ Container '{container_name}' è attivo.")
+            
             return True
         time.sleep(1)
     print(f"❌ Timeout: il container '{container_name}' non è attivo.")
     return False
 
 def exec_python_in_container(container_name, script_name):
-    print(f"🐍 Eseguo: python {script_name} dentro il container '{container_name}' (CTRL+C per uscire)")
+    
     try:
         subprocess.run([
             "docker", "exec", "-it", container_name,

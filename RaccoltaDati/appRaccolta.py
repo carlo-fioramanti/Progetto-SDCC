@@ -9,7 +9,7 @@ circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expec
 
 
 API_REGIONE = "https://allertameteo.regione.emilia-romagna.it/datiTempoReale-prevPiog-portlet/get-bollettino-monitoraggio"  
-API_ANALISI = os.getenv("ANALISI_URL", "http://analisi-dati:5001/analizza")  # nome del servizio docker
+API_ANALISI = os.getenv("ANALISI_URL", "http://analisi_dati:5001/analizza")  # nome del servizio docker
 
 
 app = Flask(__name__)

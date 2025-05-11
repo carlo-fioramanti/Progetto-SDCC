@@ -3,10 +3,10 @@ import requests
 import json
 import time
 import os
-from circuitbreaker import CircuitBreakerError
+from circuitbreaker import CircuitBreaker, CircuitBreakerError
 from flask import Flask, request, jsonify 
 
-API_URL_gestionepreferiti = "http://gestionepreferiti:5004"
+API_URL_gestionepreferiti = "http://gestione_preferiti:5004"
 app = Flask(__name__)
 
 circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)

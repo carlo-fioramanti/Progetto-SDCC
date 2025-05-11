@@ -1,4 +1,34 @@
 {
+  "TARO": [
+    "Fidenza SIAP",
+    "Castellina di Soragna"
+  ],
+  "TIDONE": [
+    "Rottofreno",
+    "Pianello Val Tidone idro",
+    "Luretta"
+  ],
+  "ARDA": [
+    "Fiorenzuola d'Arda",
+    "Castell'Arquato"
+  ],
+  "CHIAVENNA": [
+    "Saliceto"
+  ],
+  "PO": [
+    "Ponte Becca Po",
+    "Boretto",
+    "Ariano",
+    "Piacenza",
+    "Casalmaggiore",
+    "Pontelagoscuro",
+    "Polesella SIAP",
+    "Spessa Po",
+    "Sermide",
+    "Cremona",
+    "Borgoforte"
+  ],
+  
   "IDICE": [
     "S. Antonio",
     "S. Ruffillo Savena",
@@ -20,7 +50,8 @@
     "Opera Reno Panfilia",
     "Gandazzolo Reno",
     "Porretta Terme",
-    "Sasso Marconi"
+    "Sasso Marconi",
+    "Sostegno Reno"
   ],
   "SANTERNO": [
     "Codrignano",
@@ -66,7 +97,7 @@
     "Ponte Vico",
     "Castrocaro",
     "Ponte Calanca",
-    "Forli'"
+    "Forlì"
   ],
   "SILLARO": [
     "Correcchio Sillaro",
@@ -74,4 +105,5 @@
     "Castel San Pietro",
     "Sesto Imolese"
   ]
+
 }

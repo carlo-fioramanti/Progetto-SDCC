@@ -14,8 +14,8 @@ bucket_name = 'cacheapisdcc'
 circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expected_exception=Exception)
 app = Flask(__name__)
 
-API_ANALISI = os.getenv("ANALISI_URL", "http://analisi-dati:5001/analizza") 
-API_RACCOLTA = os.getenv("RACCOLTA_URL", "http://raccolta-dati:5005/fetch_data")
+API_ANALISI = os.getenv("ANALISI_URL", "http://analisi_dati:5001/analizza") 
+API_RACCOLTA = os.getenv("RACCOLTA_URL", "http://raccolta_dati:5005/fetch_data")
 
 def save_to_cache(dati):
     cache_key = "cache.json"
