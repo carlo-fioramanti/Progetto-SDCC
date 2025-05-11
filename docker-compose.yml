@@ -4,6 +4,7 @@ services:
   # Zookeeper per Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
@@ -12,6 +13,7 @@ services:
   # Kafka
   kafka:
     image: confluentinc/cp-kafka:latest
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
@@ -62,7 +64,7 @@ services:
     container_name: raccolta-dati
     command: python3 appRaccolta.py
     environment:
-      - ANALISI_URL=http://analisi-dati:5001/analizza
+      - ANALISI_URL=http://analisi_dati:5001/analizza
     ports:
       - "5005:5005"
     depends_on:
@@ -77,12 +79,12 @@ services:
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb"]
 
   #Container GestionePreferiti
-  gestionepreferiti:
+  gestione_preferiti:
     build: ./GestionePreferiti  
-    container_name: gestionepreferiti
+    container_name: gestione-preferiti
     depends_on:
       - dynamodb  
-      - gestioneutente
+      - gestione_utente
     environment:  
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
@@ -92,9 +94,9 @@ services:
       - "5004:5004"
 
   #Container GestioneUtente
-  gestioneutente:
-    build: ./gestioneutente
-    container_name: gestioneutente
+  gestione_utente:
+    build: ./GestioneUtente
+    container_name: gestione-utente
     depends_on:
       - dynamodb
     environment:
@@ -111,8 +113,8 @@ services:
     build: ./Frontend
     container_name: frontend
     depends_on:
-      - gestioneutente
-      - gestionepreferiti
+      - gestione_utente
+      - gestione_preferiti
       - kafka
       - notifica
     stdin_open: true
@@ -121,7 +123,7 @@ services:
       - "3000:3000" 
 
   #Container InizializzazioneTopic
-  init-topics:
+  init_topics:
     build: ./InizializzazioneTopic
     container_name: init-topics
     command: python3 init_topics.py
@@ -136,10 +138,10 @@ services:
     container_name: notifica
     depends_on:
       - kafka
-      - gestioneutente
-      - gestionepreferiti
+      - gestione_utente
+      - gestione_preferiti
     environment:
-      PREFERITI_URL: "http://gestionepreferiti:5004/controllo_preferiti"
+      PREFERITI_URL: "http://gestione_preferiti:5004/controllo_preferiti"
     ports:
       - "5007:5007"
 

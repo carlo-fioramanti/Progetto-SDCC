@@ -1,6 +1,6 @@
 # init_topics.py
 import json
-from circuitbreaker import CircuitBreakerError
+from circuitbreaker import CircuitBreaker, CircuitBreakerError
 from confluent_kafka.admin import AdminClient, NewTopic
 
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"

@@ -8,11 +8,11 @@ from datetime import datetime
 
 
 
-API_URL_gestioneutente = "http://gestioneutente:5001"
-API_URL_gestionepreferiti = "http://gestionepreferiti:5004"
+API_URL_gestioneutente = "http://gestione_utente:5001"
+API_URL_gestionepreferiti = "http://gestione_preferiti:5004"
 API_URL_notifiche = "http://notifica:5007"
-API_URL_raccoltadati = "http://raccolta-dati:5005/fetch_data"
-API_URL_segnalazioni = "http://segnalazione-utenti:5006"
+API_URL_raccoltadati = "http://raccolta_dati:5005/fetch_data"
+API_URL_segnalazioni = "http://segnalazione_utenti:5006"
 
 
 
@@ -89,7 +89,7 @@ def gestionepreferiti_request(user_id, fiume_selezionato, sottobacino_selezionat
 def gestione_preferiti(user_id):
     try:
         # Recupera la lista dei fiumi
-        response = fiumi_request
+        response = fiumi_request()
         if response.status_code != 200:
             print("Errore nel recupero dei fiumi.")
             return
@@ -213,11 +213,19 @@ def print_notifiche(user_id):
             return
         
         notifiche_per_topic = response.json()
+        
+
+        if not notifiche_per_topic:
+            print("🔔 Nessuna notifica disponibile.")
+            return
+
+        print("-" * 40)
         for topic, notifica in notifiche_per_topic.items():
             print(f"📢 Fiume: {notifica['fiume']}")
             print(f"   Sottobacino: {notifica['sottobacino']}")
             print(f"   Fascia: {notifica['fascia']}")
             print(f"   Data e Ora: {notifica['timestamp']}")
+            print(f"   Tipo: {notifica['tipo']}")
             print("-" * 40)
     except Exception as e:
         print("⚠️ Errore durante la chiamata al microservizio notifica:", e)
@@ -289,7 +297,8 @@ def main():
         elif choice == "2":
             user_id = login()
             if user_id:
-                print("Caricamento delle notifiche in corso:")
+                print("\nBenvenuto!\n")
+                print("Caricamento delle notifiche in corso:\n")
                 print_notifiche(user_id)
                 while True:
                     print("\n--- Menu ---")
