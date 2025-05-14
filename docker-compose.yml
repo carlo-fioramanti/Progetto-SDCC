@@ -25,6 +25,12 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 
   # Container SegnalazioneUtenti 
@@ -128,7 +134,8 @@ services:
     container_name: init-topics
     command: python3 init_topics.py
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     volumes:
       - ./InizializzazioneTopic/fiumi_sottobacini.json:/app/fiumi_sottobacini.json
 

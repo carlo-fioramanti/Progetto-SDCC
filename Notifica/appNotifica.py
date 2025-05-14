@@ -45,7 +45,17 @@ def pull_notifiche():
     }
 
     consumer = Consumer(consumer_config)
-    consumer.subscribe(topic_list)
+    #controllo se la subscription ha funzionato per tutti i topic in topic_list e printo i topic non creati
+    for topic in topic_list:
+        try:
+            consumer.subscribe([topic])
+        except KafkaError as e:
+            if e.code() == KafkaError.UNKNOWN_TOPIC_OR_PART:
+                print(f"⚠️ Topic non ancora creato: {topic}")
+            else:
+                print(f"⚠️ Errore Kafka: {e}")
+
+    #consumer.subscribe(topic_list)
 
     print("🟢 In ascolto delle notifiche Kafka per i preferiti...")
 
