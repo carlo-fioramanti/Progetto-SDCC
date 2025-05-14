@@ -22,7 +22,7 @@ def wait_for_container(container_name, timeout=60):
             
             return True
         time.sleep(1)
-    print(f"❌ Timeout: il container '{container_name}' non è attivo.")
+    
     return False
 
 def exec_python_in_container(container_name, script_name):
@@ -36,7 +36,7 @@ def exec_python_in_container(container_name, script_name):
         print("\n🛑 Interruzione ricevuta durante l'esecuzione nel container.")
 
 def docker_compose_down():
-    print("🧹 Pulizia: docker compose down")
+    
     subprocess.run(["docker", "compose", "down"])
 
 if __name__ == "__main__":

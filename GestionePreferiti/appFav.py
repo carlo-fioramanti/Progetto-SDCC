@@ -130,10 +130,12 @@ def controllo_preferiti():
         
         if cached_data:
             print("cache non vuota", flush=True)
+            print("eccomi in cache")
             # Se la cache è valida, ritorniamo i dati dalla cache
             payload = {"dati": cached_data, "da_kafka": da_kafka}
         else:
             print("cache vuota", flush=True)
+            print("niente cache")
             # Se la cache è scaduta o non esiste, si fa richiesta all'API
             raccolta_response = raccolta_request()
             dati = raccolta_response.json()

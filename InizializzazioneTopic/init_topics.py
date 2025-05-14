@@ -1,4 +1,3 @@
-# init_topics.py
 import json
 from circuitbreaker import CircuitBreaker, CircuitBreakerError
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -12,10 +11,11 @@ circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60, expec
 def client_kafka_request():
     return AdminClient({"bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS})
 
+##@circuit_breaker
 def crea_topic(nome):
     admin_client = client_kafka_request()
     topic = NewTopic(nome, num_partitions=1, replication_factor=1)
-    futures = admin_client.create_topics([topic])
+    futures = admin_client.create_topics([topic], request_timeout=10)
     for topic_name, future in futures.items():
         try:
             future.result()
