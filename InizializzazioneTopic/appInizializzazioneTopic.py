@@ -31,7 +31,7 @@ def main():
 
     for fiume, sottobacini in fiumi_sottobacini.items():
         for sottobacino in sottobacini:
-            topic = f"{fiume.replace(' ', '_').lower()}-{sottobacino.replace(' ', '_').lower()}"
+            topic = f"{fiume.replace(' ', '_').lower()}-{sottobacino.replace(' ', '_').replace("'", '.').lower()}"
             crea_topic(topic)
 
 if __name__ == "__main__":

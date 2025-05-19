@@ -24,12 +24,13 @@ def pull_notifiche():
             return jsonify({"error": "user_id mancante"}), 400
         # Recupera i preferiti dell'utente
         response = preferiti_request(user_id)
+
         if response.status_code != 200:
             print("❌ Errore nel recupero dei preferiti.")
             return
         preferiti = response.json()
         topic_list = [
-            f"{p['fiume'].replace(' ', '_').lower()}-{p['sottobacino'].replace(' ', '_').lower()}"
+            f"{p['fiume'].replace(' ', '_').lower()}-{p['sottobacino'].replace(' ', '_').replace("'", '.').lower()}"
             for p in preferiti
         ]
     except CircuitBreakerError:
@@ -45,17 +46,10 @@ def pull_notifiche():
     }
 
     consumer = Consumer(consumer_config)
-    #controllo se la subscription ha funzionato per tutti i topic in topic_list e printo i topic non creati
-    for topic in topic_list:
-        try:
-            consumer.subscribe([topic])
-        except KafkaError as e:
-            if e.code() == KafkaError.UNKNOWN_TOPIC_OR_PART:
-                print(f"⚠️ Topic non ancora creato: {topic}")
-            else:
-                print(f"⚠️ Errore Kafka: {e}")
 
-    #consumer.subscribe(topic_list)
+    print(topic_list, flush=True)
+
+    consumer.subscribe(topic_list)
 
     print("🟢 In ascolto delle notifiche Kafka per i preferiti...")
 
@@ -80,9 +74,11 @@ def pull_notifiche():
                     print(f"⚠️ Errore Kafka: {msg.error()}")
                 continue
 
+
             data = json.loads(msg.value().decode('utf-8'))
             topic = msg.topic()
             timestamp = data.get("timestamp")
+
 
             # tiene solo l'ultima per timestamp
             esistente = notifiche_per_topic.get(topic)

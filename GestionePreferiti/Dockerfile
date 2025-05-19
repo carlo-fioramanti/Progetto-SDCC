@@ -8,4 +8,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["python", "appFav.py"]
+CMD ["python", "appGestionePreferiti.py"]

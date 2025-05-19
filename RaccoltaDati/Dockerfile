@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY appRaccolta.py .
+COPY appRaccoltaDati.py .
 
-CMD ["python", "notifica.py"]
+CMD ["python", "appNotifica.py"]
 

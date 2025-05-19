@@ -39,7 +39,7 @@ services:
       context: ./SegnalazioneUtenti
       dockerfile: Dockerfile
     container_name: segnalazione-utenti
-    command: python3 segnalazioneUtenti.py
+    command: python3 appSegnalazioneUtenti.py
     depends_on:
       - kafka
     ports:
@@ -55,11 +55,12 @@ services:
       context: ./AnalisiDati
       dockerfile: Dockerfile
     container_name: analisi-dati
-    command: python3 appAnalisi.py
+    command: python3 appAnalisiDati.py
     ports:
       - "5001:5001"
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 
 
   # Container RaccoltaDati
@@ -68,7 +69,7 @@ services:
       context: ./RaccoltaDati
       dockerfile: Dockerfile
     container_name: raccolta-dati
-    command: python3 appRaccolta.py
+    command: python3 appRaccoltaDati.py
     environment:
       - ANALISI_URL=http://analisi_dati:5001/analizza
     ports:
@@ -132,7 +133,7 @@ services:
   init_topics:
     build: ./InizializzazioneTopic
     container_name: init-topics
-    command: python3 init_topics.py
+    command: python3 appInizializzazioneTopic.py
     depends_on:
       kafka:
         condition: service_healthy
