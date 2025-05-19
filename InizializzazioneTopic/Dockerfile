@@ -7,4 +7,4 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir confluent_kafka
 
-CMD ["python3", "appFav.py"]
+CMD ["python3", "appGestionePreferiti.py"]

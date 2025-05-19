@@ -17,14 +17,14 @@ app = Flask(__name__)
 
 
 def notifica(fiume, sottobacino, fascia):
-    topic_name = f"{fiume.replace(' ', '_').lower()}-{sottobacino.replace(' ', '_').lower()}"
-    print(f"Produco su topic: {topic_name}", flush=True)  # 👈 log utile
+    topic_name = f"{fiume.replace(' ', '_').lower()}-{sottobacino.replace(' ', '_').replace("'", '.').lower()}"
+    print(f"Produco su topic: {topic_name}", flush=True)  
 
     messaggio = {
         "fiume": fiume,
         "sottobacino": sottobacino,
         "fascia": fascia,
-        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M'),
+        "timestamp": datetime.now().strftime('%d-%m-%Y %H:%M'),
         "tipo": "allerta del sistema"
     }
 
