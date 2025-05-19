@@ -50,7 +50,7 @@ def segnala():
         "fiume": fiume,
         "sottobacino": sottobacino,
         "fascia": fascia,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M'),
         "tipo": "segnalazione utente"
     }
 

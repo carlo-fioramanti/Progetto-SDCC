@@ -1,4 +1,4 @@
-from db_fav import add_to_favorites, show_favorites, remove_from_favorites
+from db_fav import add_to_favorites, show_favorites, remove_from_favorites, is_already_favorite
 from flask import Flask, request, jsonify
 import requests
 import os
@@ -102,8 +102,11 @@ def gestione_preferiti():
         return jsonify({"error": f"Sottobacino '{sottobacino}' non trovato nel fiume {fiume}"}), 404
 
     try:
-        # Aggiungo il fiume e il sottobacino ai preferiti dell'utente, protetto dal Circuit Breaker
-        add_to_favorites(user_id, fiume, sottobacino)  # Usa il Circuit Breaker
+        result = is_already_favorite(user_id, fiume, sottobacino)
+        if result == 1:
+            return jsonify({"status": 1, "message": f"Il fiume {fiume} e il sottobacino {sottobacino} sono già nei preferiti!"}), 200
+        # Aggiungo il nuovo preferito
+        add_to_favorites(user_id, fiume, sottobacino)
         return jsonify({"message": f"{sottobacino} aggiunto ai preferiti di {fiume}!"}), 200
     except CircuitBreakerError:
         return jsonify({"error": "Circuit Breaker attivato, il servizio non è disponibile."}), 503
@@ -130,16 +133,14 @@ def controllo_preferiti():
         
         if cached_data:
             print("cache non vuota", flush=True)
-            print("eccomi in cache")
             # Se la cache è valida, ritorniamo i dati dalla cache
             payload = {"dati": cached_data, "da_kafka": da_kafka}
         else:
             print("cache vuota", flush=True)
-            print("niente cache")
             # Se la cache è scaduta o non esiste, si fa richiesta all'API
             raccolta_response = raccolta_request()
             dati = raccolta_response.json()
-            # Step 4: Salva i dati nella cache S3
+            #Salva i dati nella cache S3
             save_to_cache(dati)
             payload = {"dati": dati, "da_kafka": da_kafka}
         

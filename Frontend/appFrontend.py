@@ -115,10 +115,13 @@ def gestione_preferiti(user_id):
         scelta_sottobacino = int(input("Numero del sottobacino: "))
         sottobacino_selezionato = sottobacini[scelta_sottobacino]
 
-        # Gestisci i preferiti
         response = gestionepreferiti_request(user_id, fiume_selezionato, sottobacino_selezionato)
+        # Verifica la risposta
         if response.status_code == 200:
-            print("Preferiti gestiti correttamente!")
+            if response.json().get("status") == 1:
+                print(f"Fiume {fiume_selezionato} e sottobacino {sottobacino_selezionato} già presenti nei preferiti.", flush=True)
+            else:
+                print("Preferiti gestiti correttamente!", flush=True)
         else:
             print(f"Errore: {response.status_code} - {response.text}")
 
@@ -239,18 +242,25 @@ def preferiti_request(user_id):
 
 
 def controllo_preferiti(user_id):
-    response = preferiti_request(user_id)
-    if response.status_code != 200:
-        print(response)
-        print("Errore nel recupero dei preferiti.")
-        return
-    preferiti = response.json()
-    print("\n Fiumi preferiti:")
-    for idx, pref in enumerate(preferiti):
-        fiume = pref.get("fiume", "")
-        sottobacino = pref.get("sottobacino", "")
-        fascia_allerta = pref.get("allerta", "")
-        print(f"{idx}. Fiume: {fiume}, Sottobacino: {sottobacino}, Allerta: {fascia_allerta}")
+    try:
+        response = preferiti_request(user_id)
+        if response.status_code != 200:
+            print(response)
+            print("Errore nel recupero dei preferiti.")
+            return
+        preferiti = response.json()
+        print("\n Fiumi preferiti:")
+        for idx, pref in enumerate(preferiti):
+            fiume = pref.get("fiume", "")
+            sottobacino = pref.get("sottobacino", "")
+            fascia_allerta = pref.get("allerta", "")
+            print(f"{idx}. Fiume: {fiume}, Sottobacino: {sottobacino}, Allerta: {fascia_allerta}")
+    except CircuitBreakerError:
+        print("Circuit Breaker attivato: il servizio non è disponibile.")
+    except requests.exceptions.RequestException as e:
+        print(f"Errore nella richiesta: {e}")
+    except Exception as e:
+        print(f"Errore imprevisto: {e}")
 
 @circuit_breaker
 def rimozione_request(user_id, fiume, sottobacino):
@@ -260,33 +270,38 @@ def rimozione_request(user_id, fiume, sottobacino):
     )
 
 def rimozione_preferiti(user_id):
-    response = preferiti_request(user_id)
-    if response.status_code != 200:
-        print("Errore nel recupero dei preferiti.")
-        return
-    preferiti = response.json()
-    print("\nFiumi preferiti:")
-    for idx, pref in enumerate(preferiti):
-        print(f"{idx}. Fiume: {pref['fiume']} | Sottobacino: {pref['sottobacino']}")
-
     try:
+        response = preferiti_request(user_id)
+        if response.status_code != 200:
+            print("Errore nel recupero dei preferiti.")
+            return
+        preferiti = response.json()
+        print("\nFiumi preferiti:")
+        for idx, pref in enumerate(preferiti):
+            print(f"{idx}. Fiume: {pref['fiume']} | Sottobacino: {pref['sottobacino']}")
+
+        
         num_fiume = int(input("Seleziona il numero del fiume da rimuovere: "))
         if num_fiume < 0 or num_fiume >= len(preferiti):
             print("Numero selezionato non valido")
             return
-    except ValueError:
-        print("Input non valido. Inserisci un numero.")
-        return
+     
 
-    fiume_da_rimuovere = preferiti[num_fiume]["fiume"]
-    sottobacino_da_rimuovere = preferiti[num_fiume]["sottobacino"]
+        fiume_da_rimuovere = preferiti[num_fiume]["fiume"]
+        sottobacino_da_rimuovere = preferiti[num_fiume]["sottobacino"]
 
-    response = rimozione_request(user_id, fiume_da_rimuovere, sottobacino_da_rimuovere)
+        response = rimozione_request(user_id, fiume_da_rimuovere, sottobacino_da_rimuovere)
 
-    if response.status_code == 200:
-        print("✅ Preferito rimosso correttamente.")
-    else:
-        print(f"Errore nella rimozione: {response.text}")
+        if response.status_code == 200:
+            print("✅ Preferito rimosso correttamente.")
+        else:
+            print(f"Errore nella rimozione: {response.text}")
+    except CircuitBreakerError:
+        print("Circuit Breaker attivato: il servizio non è disponibile.")
+    except requests.exceptions.RequestException as e:
+        print(f"Errore nella richiesta: {e}")
+    except Exception as e:
+        print(f"Errore imprevisto: {e}")
 
 def main():
     while True:

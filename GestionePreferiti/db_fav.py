@@ -1,10 +1,9 @@
 import boto3
 import os
-import uuid
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 from dotenv import load_dotenv
 import os
-from circuitbreaker import CircuitBreaker, CircuitBreakerError  # Importa il Circuit Breaker
+from circuitbreaker import CircuitBreaker  
 
 
 aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
@@ -54,6 +53,9 @@ def add_to_favorites(user_id, fiume, sottobacino):
         print(f"Errore durante l'aggiunta ai preferiti: {e}")
         return {"error": f"Errore durante l'aggiunta ai preferiti: {str(e)}"}
     
+
+    
+    
 @circuit_breaker    
 def show_favorites(user_id, dati_fiumi):
     try:
@@ -64,12 +66,9 @@ def show_favorites(user_id, dati_fiumi):
         for p in preferiti:
             fiume = p['fiume']['S'] if isinstance(p['fiume'], dict) else p['fiume']
             sottobacino = p['sottobacino']['S'] if isinstance(p['sottobacino'], dict) else p['sottobacino']
-            # print(f"controllo del fiume {fiume}-{sottobacino}", flush=True)
             fascia_allerta = "non disponibile"
 
             for entry in dati_fiumi:
-                # print(entry)
-                # print(f"{entry["fiume"]},{entry["sottobacino"]}")
                 if entry["fiume"]== fiume and entry["sottobacino"] == sottobacino:
                     fascia_allerta = entry["fascia"]
                     break
@@ -111,4 +110,30 @@ def remove_from_favorites(user_id, fiume, sottobacino):
     table.put_item(Item=user_data)
 
 
+@circuit_breaker
+def is_already_favorite(user_id, fiume, sottobacino):
+    try:
+        response = table.get_item(Key={'id_user': user_id})
+        if 'Item' not in response:
+            return 0  # Nessun preferito ancora
+
+        preferiti = response['Item'].get('preferiti', [])
+
+        f_input = fiume.strip().lower()
+        s_input = sottobacino.strip().lower()
+
+        print(f"Verifica se il preferito {f_input} - {s_input} è già presente nei preferiti.", flush=True)
+
+        for p in preferiti:
+            f = p.get('fiume', "").get("S", "") if isinstance(p.get('fiume'), dict) else p.get('fiume', "")
+            s = p.get('sottobacino', "").get("S", "") if isinstance(p.get('sottobacino'), dict) else p.get('sottobacino', "")
+
+            print(f"Confronto: fiume = {f.strip().lower()} con {f_input}, sottobacino = {s.strip().lower()} con {s_input}", flush=True)
+
+            if f.strip().lower() == f_input and s.strip().lower() == s_input:
+                return 1
+
+        return 0
+    except Exception as e:
+        print(f"Errore durante il controllo dei preferiti: {e}")
         
