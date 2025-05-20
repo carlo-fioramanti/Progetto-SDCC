@@ -4,7 +4,7 @@ from circuitbreaker import CircuitBreaker, CircuitBreakerError
 import threading
 import json
 from confluent_kafka import Consumer, KafkaError 
-from datetime import datetime
+import time
 
 
 
@@ -206,10 +206,17 @@ def segnala_livello_critico():
 def controllapreferiti_request(user_id):
     return requests.post(f"{API_URL_gestionepreferiti}/controllo_preferiti", json={"user_id": user_id, "da_kafka": True})
 
+@circuit_breaker
+def notifiche_request(user_id):
+    return requests.post(f"{API_URL_notifiche}/notifiche", json={"user_id": user_id})
 
-def print_notifiche(user_id):
+def print_notifiche(user_id, tentativo):
     try:
-        response = requests.post(f"{API_URL_notifiche}/notifiche", json={"user_id": user_id})
+        response = notifiche_request(user_id)
+        if response.status_code == 500:
+            print("Nessun preferito impostato")
+            return
+
         if response.status_code != 200:
             print("❌ Errore nella ricezione delle notifiche.")
             return
@@ -218,7 +225,12 @@ def print_notifiche(user_id):
         
 
         if not notifiche_per_topic:
-            print("🔔 Nessuna notifica disponibile.")
+            
+            time.sleep(1)
+            if tentativo < 3:
+                print_notifiche(user_id, tentativo+1)  # ritento
+            else:
+                print("🔔 Nessuna notifica disponibile.")
             return
 
         print("-" * 40)
@@ -229,9 +241,15 @@ def print_notifiche(user_id):
             print(f"   Data e Ora: {notifica['timestamp']}")
             print(f"   Tipo: {notifica['tipo']}")
             print("-" * 40)
+    
+    
+    except CircuitBreakerError:
+        print("Circuit Breaker attivato: il servizio non è disponibile.")
+    except requests.exceptions.RequestException as e:
+        print(f"Errore nella richiesta: {e}")
     except Exception as e:
         print("⚠️ Errore durante la chiamata al microservizio notifica:", e)
-
+    
 
 
     
@@ -313,7 +331,7 @@ def main():
             if user_id:
                 print("\nBenvenuto!\n")
                 print("Caricamento delle notifiche in corso:\n")
-                print_notifiche(user_id)
+                print_notifiche(user_id, 0)
                 while True:
                     print("\n--- Menu ---")
                     print("0. Aggiungi Preferiti")

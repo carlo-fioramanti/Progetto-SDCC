@@ -47,8 +47,6 @@ def pull_notifiche():
 
     consumer = Consumer(consumer_config)
 
-    print(topic_list, flush=True)
-
     consumer.subscribe(topic_list)
 
     print("🟢 In ascolto delle notifiche Kafka per i preferiti...")
@@ -64,9 +62,7 @@ def pull_notifiche():
             if msg is None:
                 polling_vuoti += 1
                 continue
-            
-            if msg is None:
-                continue
+
             if msg.error():
                 if msg.error().code() == KafkaError.UNKNOWN_TOPIC_OR_PART:
                     print(f"⚠️ Topic non ancora creato: {msg.topic()}")
@@ -84,12 +80,13 @@ def pull_notifiche():
             esistente = notifiche_per_topic.get(topic)
             if esistente is None or esistente["timestamp"] < timestamp:
                 notifiche_per_topic[topic] = data
-        print(notifiche_per_topic, flush=True)
-        return notifiche_per_topic
     except KeyboardInterrupt:
         print("🛑 Interruzione consumer ricevuta.")
     finally:
         consumer.close()
+
+    return jsonify(notifiche_per_topic or {})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5007)
