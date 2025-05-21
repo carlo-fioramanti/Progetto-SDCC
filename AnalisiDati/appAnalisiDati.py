@@ -78,15 +78,11 @@ def analizza():
                     fascia = "arancione"
                     if da_kafka:
                         notifica(nome_bacino, nome_sottobacino, fascia)
-                elif valore_osservazione < fasce["rossa"]:
+                elif valore_osservazione > fasce["arancione"]:
                     fascia = "rossa"
                     if da_kafka:
                         notifica(nome_bacino, nome_sottobacino, fascia)
-                else:
-                    fascia = "oltre il rosso"
-                    if da_kafka:
-                        notifica(nome_bacino, nome_sottobacino, fascia)
-
+                
                 dati_fiumi.append({
                     "fiume": nome_bacino,
                     "sottobacino": nome_sottobacino,
