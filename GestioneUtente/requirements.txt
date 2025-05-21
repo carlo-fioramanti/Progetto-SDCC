@@ -1,0 +1,6 @@
+flask
+boto3
+circuitbreaker
+python-dotenv
+
+
