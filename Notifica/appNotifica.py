@@ -41,8 +41,9 @@ def pull_notifiche():
 
     consumer_config = {
         'bootstrap.servers': 'kafka:9092',
-        'group.id': 'notifica-service',
-        'auto.offset.reset': 'earliest'
+        'group.id': f'notifica-service-{user_id}',
+        'auto.offset.reset': 'earliest',
+        'enable.auto.commit': True
     }
 
     consumer = Consumer(consumer_config)
