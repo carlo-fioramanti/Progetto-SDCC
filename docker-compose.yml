@@ -41,7 +41,8 @@ services:
     container_name: segnalazione-utenti
     command: python3 appSegnalazioneUtenti.py
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - "5006:5006"
     environment:
