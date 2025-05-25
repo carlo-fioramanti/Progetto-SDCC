@@ -9,10 +9,10 @@ Il sistema consente la registrazione e l’accesso degli utenti, la visualizzazi
 
     Inserisci le tue credenziali AWS nel file .env:
 
-    AWS_ACCESS_KEY_ID=
-    AWS_SECRET_ACCESS_KEY=
-    AWS_SESSION_TOKEN=
-    AWS_REGION=
+    - AWS_ACCESS_KEY_ID=
+    - AWS_SECRET_ACCESS_KEY=
+    - AWS_SESSION_TOKEN=
+    - AWS_REGION=
 
     Crea una tabella DynamoDB chiamata Favorites con chiave primaria id_user (di tipo stringa).
 
@@ -23,17 +23,17 @@ Assicurati che i servizi comunichino correttamente tramite le porte indicate.
 
 🚀 Come Avviare il Client
 
-    - Apri il terminale nella cartella del progetto.
+- Apri il terminale nella cartella del progetto.
 
-    - Esegui il file:
+- Esegui il file:
 
           start.py
-    
-    Dopo l’accesso, l’interfaccia permette di:
 
-        - Aggiungere/Rimuovere/Visualizzare fiumi preferiti
+Dopo l’accesso, l’interfaccia permette di:
 
-        - Segnalare situazioni critiche
+- Aggiungere/Rimuovere/Visualizzare fiumi preferiti
+
+- Segnalare situazioni critiche
         
-        - Ricevere notifiche in tempo reale
+- Ricevere notifiche in tempo reale
 
