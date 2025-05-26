@@ -16,7 +16,7 @@ Il sistema consente la registrazione e l’accesso degli utenti, la visualizzazi
 
     Crea una tabella DynamoDB chiamata Favorites con chiave primaria id_user (di tipo stringa).
 
-    Crea un bucket S3 (es. cacheapisdcc) per memorizzare i dati in cache utilizzati nell’analisi.
+    Crea un bucket S3 per memorizzare i dati in cache utilizzati nell’analisi.
 
 Assicurati che i servizi comunichino correttamente tramite le porte indicate.
 2. File Necessari
