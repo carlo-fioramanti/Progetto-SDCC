@@ -18,9 +18,6 @@ Il sistema consente la registrazione e l’accesso degli utenti, la visualizzazi
 
     Crea un bucket S3 per memorizzare i dati in cache utilizzati nell’analisi.
 
-Assicurati che i servizi comunichino correttamente tramite le porte indicate.
-2. File Necessari
-
 🚀 Come Avviare il Client
 
 - Apri il terminale nella cartella del progetto.
